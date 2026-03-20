@@ -98,6 +98,7 @@ from .relationship_extractor import (
 from .changelog import ChangeTracker, CellChange, VersionSnapshot, ChangeType
 from .optimizer import MatrixOptimizer, OptimizationSuggestion
 from .demo import build_hypercube_from_adapter
+from .memory import MemoryStore, SessionRecord
 
 __all__ = [
     # Core dual-matrix (original)
@@ -191,4 +192,7 @@ __all__ = [
     "OptimizationSuggestion",
     # Demo: DB → dual-matrix builder
     "build_hypercube_from_adapter",
+    # Memory: persistent session & preference store
+    "MemoryStore",
+    "SessionRecord",
 ]

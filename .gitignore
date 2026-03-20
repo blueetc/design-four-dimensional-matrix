@@ -26,3 +26,18 @@ htmlcov/
 .idea/
 .vscode/
 *.swp
+
+# Generated output files (keep directory, ignore contents except example)
+outputs/*.html
+outputs/*.json
+outputs/*.png
+outputs/*.csv
+
+# Task data files (generated at runtime; keep example template)
+tasks/*.json
+tasks/*.log
+# Do NOT ignore tasks/*.yaml — example templates should be tracked
+
+# User-specific memory store (lives in ~/.four_dim_matrix/, not here)
+# Uncomment to also ignore any local memory files dropped in project root:
+# memory.json

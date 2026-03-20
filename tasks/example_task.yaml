@@ -1,0 +1,41 @@
+# four-dim-matrix Task Definition Example
+# Copy this file (e.g. my_scan.yaml) and fill in your settings.
+# Run with:  four-dim-matrix task --file tasks/my_scan.yaml
+
+task:
+  name: "示例扫描任务 / Example scan task"
+  description: "扫描生产数据库并生成四维矩阵可视化"
+
+database:
+  # type: sqlite | postgres | mysql
+  type: sqlite
+  # sqlite_path: path/to/your.db
+  sqlite_path: ""
+
+  # For postgres / mysql:
+  # host: localhost
+  # port: 5432
+  # user: myuser
+  # password: ""        # or set env var FOUR_DIM_DB_PASSWORD
+  # database: mydb
+
+output:
+  # Directory for generated files (created automatically if absent)
+  dir: "./outputs"
+  # Base filename for exports (timestamp appended automatically)
+  name: "matrix_scan"
+  # formats: json | html | both
+  formats: both
+
+visualization:
+  # Start the Dash dashboard after scanning?
+  serve: false
+  port: 8050
+
+memory:
+  # Record this session in ~/.four_dim_matrix/memory.json?
+  record: true
+  # Human-readable label stored in session history
+  label: ""
+  # Notes appended to the session record
+  notes: ""
