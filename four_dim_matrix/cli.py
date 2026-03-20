@@ -13,6 +13,9 @@
       --spec tasks/mydb_spec.md              # 先加载 Markdown 设计说明书再扫描
   four-dim-matrix scan --db postgres \\
       --host localhost --user me --password x --database mydb
+  four-dim-matrix compare \\
+      -a outputs/scan_v1.json \\
+      -b outputs/scan_v2.json                # 比较两次扫描的矩阵差异（多流对比）
   four-dim-matrix visualize -i scan.json     # 从已有 JSON 启动可视化
   four-dim-matrix query -i scan.json -c '#3d6e9e'
   four-dim-matrix history                    # 查看最近扫描记录
@@ -38,6 +41,7 @@ from four_dim_matrix.demo import build_hypercube_from_adapter
 from four_dim_matrix.db_adapter import DatabaseAdapter
 from four_dim_matrix.memory import MemoryStore
 from four_dim_matrix.design_spec import DesignSpecParser, DesignSpec
+from four_dim_matrix.stream_comparator import StreamComparator
 
 
 # ---------------------------------------------------------------------------
@@ -383,6 +387,68 @@ def visualize_data(args) -> None:
 
 
 # ---------------------------------------------------------------------------
+# compare
+# ---------------------------------------------------------------------------
+
+def compare_streams(args) -> None:
+    """比较两次扫描（两个 JSON 文件）之间的矩阵差异。
+
+    类比视频编辑软件中将两条轨道并排比较：加载两个 HyperCube 快照，
+    用 StreamComparator 计算它们的结构性差异（新增/删除的表、业务域
+    变更、生命周期变更、数据量变化），并按游标在生命周期各阶段逐帧扫描。
+    """
+    def _load_hc(path: str) -> HyperCube:
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except (OSError, json.JSONDecodeError) as exc:
+            print(f"❌ 无法读取文件 {path!r}: {exc}")
+            sys.exit(1)
+        return HyperCube.from_visualization_dict(data)
+
+    hc_a = _load_hc(args.input_a)
+    hc_b = _load_hc(args.input_b)
+
+    label_a = args.label_a or Path(args.input_a).stem
+    label_b = args.label_b or Path(args.input_b).stem
+
+    print(f"\n🎬 多流矩阵对比  |  A={label_a!r}  B={label_b!r}\n")
+
+    cmp = StreamComparator()
+    cmp.add_stream(label_a, hc_a)
+    cmp.add_stream(label_b, hc_b)
+
+    # ── per-stream summary ────────────────────────────────────────────
+    print(cmp.summary())
+    print()
+
+    # ── diff report ──────────────────────────────────────────────────
+    diff = cmp.diff(label_a, label_b)
+    print(diff.summary())
+    print()
+
+    # ── lifecycle-axis scan (timeline scrub) ─────────────────────────
+    print("─── 生命周期轴扫描（时间轴拖动模拟）───")
+    print(f"  {'阶段':<12}  {label_a:<20}  {label_b}")
+    cmp.cursor.reset()
+    for frame in cmp.scan():
+        stage = frame["cursor"]
+        counts = frame["counts"]
+        bar_a = "█" * counts.get(label_a, 0)
+        bar_b = "█" * counts.get(label_b, 0)
+        print(f"  {stage:<12}  {bar_a or '(无)':<20}  {bar_b or '(无)'}")
+    print()
+
+    # ── optional JSON output ─────────────────────────────────────────
+    if args.output:
+        out_path = Path(args.output)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(out_path, "w", encoding="utf-8") as f:
+            json.dump(diff.to_dict(), f, ensure_ascii=False, indent=2)
+        print(f"✅ 差异报告已保存到: {out_path}")
+
+
+# ---------------------------------------------------------------------------
 # query
 # ---------------------------------------------------------------------------
 
@@ -677,6 +743,38 @@ def main() -> None:
         help="可视化服务端口 (默认: 8050)",
     )
 
+    # ── compare ───────────────────────────────────────────────────────
+    compare_parser = subparsers.add_parser(
+        "compare",
+        help="比较两次扫描的矩阵差异（多流时间轴对比）",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "从两个已保存的 JSON 文件加载矩阵快照，\n"
+            "计算结构性差异（新增/删除的表、业务域变更、生命周期变更、数据量变化），\n"
+            "并在生命周期各阶段上进行同步扫描（类似视频编辑器的多轨时间轴对比）。"
+        ),
+    )
+    compare_parser.add_argument(
+        "--input-a", "-a", required=True, metavar="FILE",
+        help='第一个矩阵快照 JSON 文件路径（"before" 轨道）',
+    )
+    compare_parser.add_argument(
+        "--input-b", "-b", required=True, metavar="FILE",
+        help='第二个矩阵快照 JSON 文件路径（"after" 轨道）',
+    )
+    compare_parser.add_argument(
+        "--label-a", default="", metavar="NAME",
+        help="第一条流的显示名称（默认使用文件名）",
+    )
+    compare_parser.add_argument(
+        "--label-b", default="", metavar="NAME",
+        help="第二条流的显示名称（默认使用文件名）",
+    )
+    compare_parser.add_argument(
+        "--output", "-o", metavar="FILE",
+        help="将差异报告输出为 JSON 文件（可选）",
+    )
+
     # ── visualize ─────────────────────────────────────────────────────
     viz_parser = subparsers.add_parser(
         "visualize",
@@ -732,6 +830,8 @@ def main() -> None:
         run_demo_command(args)
     elif args.command == "scan":
         scan_database(args)
+    elif args.command == "compare":
+        compare_streams(args)
     elif args.command == "visualize":
         visualize_data(args)
     elif args.command == "query":
