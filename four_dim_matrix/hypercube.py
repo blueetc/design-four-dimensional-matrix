@@ -500,3 +500,46 @@ class HyperCube:
             },
             "sync_status": self.synced,
         }
+
+    @classmethod
+    def from_visualization_dict(cls, data: Dict[str, Any]) -> "HyperCube":
+        """从 :meth:`export_for_visualization` 输出的字典重建 HyperCube。
+
+        用于 ``visualize`` 子命令：将已保存的 JSON 文件重新加载为可交互的
+        双矩阵结构，而不是显示空仪表盘。
+
+        Parameters:
+            data: :meth:`export_for_visualization` 返回的字典，或从对应 JSON
+                文件中解析出的相同格式数据。
+
+        Returns:
+            重建后的 :class:`HyperCube` 实例。
+        """
+        hc = cls()
+        for point in data.get("data_points", []):
+            coords = point.get("coordinates", {})
+            d = point.get("data", {})
+            try:
+                t_raw = coords.get("t")
+                t = (
+                    datetime.fromisoformat(t_raw)
+                    if isinstance(t_raw, str)
+                    else (t_raw if isinstance(t_raw, datetime) else datetime.now())
+                )
+                cell = DataCell(
+                    t=t,
+                    x=int(coords.get("x", 0)),
+                    y=float(coords.get("y", 0)),
+                    z=int(coords.get("z", 0)),
+                    table_name=d.get("table_name", ""),
+                    schema_name=d.get("schema_name", ""),
+                    column_count=int(d.get("column_count", 0)),
+                    row_count=int(d.get("row_count", 0)),
+                    size_bytes=int(d.get("size_bytes", 0)),
+                    business_domain=d.get("business_domain", ""),
+                    lifecycle_stage=d.get("lifecycle_stage", ""),
+                )
+                hc.add_cell(cell, compute_color=True)
+            except (KeyError, ValueError, TypeError):
+                continue
+        return hc

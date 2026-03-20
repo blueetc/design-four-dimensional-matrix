@@ -3,6 +3,10 @@
 Matplotlib and Plotly are exercised in "headless" mode (no display).
 All tests verify structural correctness (axes labels, data counts, figure
 types) rather than pixel output, so they run in CI without a display server.
+
+The ``[viz]`` optional dependency group (matplotlib, plotly) is required for
+these tests.  When those libraries are absent the entire test class is skipped
+instead of failing with ``ModuleNotFoundError``.
 """
 
 from __future__ import annotations
@@ -23,6 +27,29 @@ from four_dim_matrix import (
 
 # Force Matplotlib into non-interactive backend before any import of pyplot
 os.environ.setdefault("MPLBACKEND", "Agg")
+
+# Module-level availability flags used for class-level skip markers
+_HAS_MATPLOTLIB = False
+_HAS_PLOTLY = False
+try:
+    import matplotlib  # noqa: F401
+    _HAS_MATPLOTLIB = True
+except ImportError:
+    pass
+try:
+    import plotly  # noqa: F401
+    _HAS_PLOTLY = True
+except ImportError:
+    pass
+
+_SKIP_MATPLOTLIB = pytest.mark.skipif(
+    not _HAS_MATPLOTLIB,
+    reason="matplotlib not installed (pip install four-dim-matrix[viz])",
+)
+_SKIP_PLOTLY = pytest.mark.skipif(
+    not _HAS_PLOTLY,
+    reason="plotly not installed (pip install four-dim-matrix[viz])",
+)
 
 
 # ---------------------------------------------------------------------------
@@ -51,6 +78,7 @@ def _make_kb() -> KnowledgeBase:
 # MatrixVisualizer – Matplotlib
 # ---------------------------------------------------------------------------
 
+@_SKIP_MATPLOTLIB
 class TestMatplotlibPlots:
     @pytest.fixture(autouse=True)
     def close_figs(self):
@@ -152,6 +180,7 @@ class TestMatplotlibPlots:
 # MatrixVisualizer – Plotly
 # ---------------------------------------------------------------------------
 
+@_SKIP_PLOTLY
 class TestPlotlyPlots:
     def test_to_plotly_snapshot_returns_figure(self):
         import plotly.graph_objects as go
@@ -227,6 +256,7 @@ class TestPlotlyPlots:
 # ---------------------------------------------------------------------------
 
 class TestRenderSnapshot:
+    @_SKIP_MATPLOTLIB
     def test_matplotlib_backend_returns_figure(self):
         import matplotlib.figure
         kb  = _make_kb()
@@ -235,12 +265,14 @@ class TestRenderSnapshot:
         import matplotlib.pyplot as plt
         plt.close("all")
 
+    @_SKIP_PLOTLY
     def test_plotly_backend_returns_figure(self):
         import plotly.graph_objects as go
         kb  = _make_kb()
         fig = render_snapshot(kb, backend="plotly")
         assert isinstance(fig, go.Figure)
 
+    @_SKIP_MATPLOTLIB
     def test_save_to_png(self):
         kb = _make_kb()
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as f:
@@ -253,6 +285,7 @@ class TestRenderSnapshot:
             import matplotlib.pyplot as plt
             plt.close("all")
 
+    @_SKIP_PLOTLY
     def test_save_html(self):
         kb = _make_kb()
         with tempfile.NamedTemporaryFile(suffix=".html", delete=False) as f:

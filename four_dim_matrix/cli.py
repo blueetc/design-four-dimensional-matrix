@@ -100,17 +100,29 @@ def _export_json(hypercube: HyperCube, path: str) -> None:
 
 
 def _record_session(
-    store: MemoryStore, args: Any, hypercube: HyperCube, source: str
+    store: MemoryStore, args: Any, hypercube: HyperCube, source: str,
+    out_path: str = "",
 ) -> None:
+    """Persist a scan session in the memory store.
+
+    Parameters:
+        store: The :class:`~four_dim_matrix.memory.MemoryStore` instance.
+        args: Parsed CLI namespace (used for ``label`` and ``db`` attributes).
+        hypercube: The produced :class:`~four_dim_matrix.HyperCube`.
+        source: Database path or connection string.
+        out_path: The **resolved** output file path that was actually written.
+            Must be the same path that was passed to :func:`_export_json`; do
+            not re-call :func:`_resolve_output_path` here because a second call
+            would generate a *different* timestamped filename.
+    """
     dm = hypercube.get_summary().get("data_matrix", {})
     cm = hypercube.get_summary().get("color_matrix", {})
-    out = _resolve_output_path(getattr(args, "output", None)) or ""
     store.record_session(
         source=source,
         cell_count=dm.get("total_cells", 0),
         color_count=cm.get("total_cells", 0),
         label=getattr(args, "label", "") or source,
-        output_file=out,
+        output_file=out_path,
         extra={
             "db_type": getattr(args, "db", ""),
             "domains": dm.get("domains", []),
@@ -145,7 +157,7 @@ def scan_database(args) -> HyperCube:
             _export_json(hypercube, out_path)
             print(f"📄 JSON 已导出至: {out_path}")
 
-        _record_session(store, args, hypercube, db_path)
+        _record_session(store, args, hypercube, db_path, out_path=out_path or "")
 
         if getattr(args, "visualize", False):
             _start_dashboard(hypercube, args.viz_port)
@@ -213,12 +225,16 @@ def scan_database(args) -> HyperCube:
     lineage = LineageTracker()
     stage_to_x = {"new": 20, "growth": 50, "mature": 80, "legacy": 110}
 
+    # Compute max_rows once before the loop (O(n)) instead of inside it (O(n²))
+    max_rows = max(
+        (s.row_count for s in result["signatures"]), default=1
+    ) or 1
+
     for sig in result["signatures"]:
         table_name = sig.table_name
         z = result["domain_mapping"].get(table_name, 0)
         stage = result["lifecycle_mapping"].get(table_name, "mature")
         x = stage_to_x.get(stage, 50)
-        max_rows = max((s.row_count for s in result["signatures"]), default=1)
         y = 0
         if sig.row_count > 0:
             y = min(255, max(1, int(sig.row_count / max(max_rows / 255, 1))))
@@ -267,7 +283,7 @@ def scan_database(args) -> HyperCube:
         _export_json(hypercube, out_path)
         print(f"📄 JSON 已导出至: {out_path}")
 
-    _record_session(store, args, hypercube, args.database)
+    _record_session(store, args, hypercube, args.database, out_path=out_path or "")
 
     if getattr(args, "visualize", False):
         _start_dashboard(hypercube, args.viz_port)
@@ -333,7 +349,9 @@ def visualize_data(args) -> None:
     if n == 0:
         print("⚠️  文件中没有数据点，仪表盘将显示空视图。")
 
-    hypercube = HyperCube()
+    # Reconstruct HyperCube from the loaded JSON so the dashboard shows real data
+    hypercube = HyperCube.from_visualization_dict(data)
+    _print_hypercube_summary(hypercube)
     _start_dashboard(hypercube, args.port)
 
 
