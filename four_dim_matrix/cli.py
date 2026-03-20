@@ -16,29 +16,71 @@ from four_dim_matrix.hypercube import HyperCube
 from four_dim_matrix.data_matrix import DataCell
 from four_dim_matrix.lineage import LineageTracker, PhysicalLocation
 from four_dim_matrix.dynamic_classifier import UnknownDatabaseProcessor
-from four_dim_matrix.connectors.postgres import PostgresConnector
-from four_dim_matrix.connectors.mysql import MySQLConnector
-from four_dim_matrix.dashboard import create_hypercube_dashboard
-from datetime import datetime
+from four_dim_matrix.demo import build_hypercube_from_adapter
+from four_dim_matrix.db_adapter import DatabaseAdapter
+
+
+def _get_connector(db_type: str, conn_params: dict):
+    """Lazily import and return the appropriate database connector."""
+    if db_type == "postgres":
+        from four_dim_matrix.connectors.postgres import PostgresConnector
+        return PostgresConnector(conn_params)
+    from four_dim_matrix.connectors.mysql import MySQLConnector
+    return MySQLConnector(conn_params)
+
+
+def _start_dashboard(hypercube: HyperCube, port: int) -> None:
+    """Lazily import Dash dashboard and start the server."""
+    from four_dim_matrix.dashboard import create_hypercube_dashboard
+    app = create_hypercube_dashboard(hypercube)
+    app.run(debug=True, port=port)
 
 
 def scan_database(args):
     """扫描数据库并生成四维矩阵（支持未知数据库结构）"""
+
+    # ----------------------------------------------------------------
+    # SQLite path – uses the lightweight DatabaseAdapter directly
+    # ----------------------------------------------------------------
+    if args.db == "sqlite":
+        if not args.sqlite_path:
+            print("错误: 使用 --db sqlite 时必须提供 --sqlite-path 参数")
+            sys.exit(1)
+        print(f"正在打开 SQLite 数据库: {args.sqlite_path}")
+        adapter = DatabaseAdapter.from_sqlite(args.sqlite_path)
+        hypercube = build_hypercube_from_adapter(adapter, args.sqlite_path)
+        print("\n四维矩阵生成完成!")
+        print(f"数据单元格: {len(hypercube.data_matrix.cells)}")
+        print(f"颜色单元格: {len(hypercube.color_matrix.cells)}")
+        if args.output:
+            export_data = hypercube.export_for_visualization()
+            with open(args.output, "w", encoding="utf-8") as f:
+                json.dump(export_data, f, ensure_ascii=False, indent=2)
+            print(f"\n已导出到: {args.output}")
+        if args.visualize:
+            print("\n启动可视化仪表盘...")
+            print("  访问 http://127.0.0.1:{}".format(args.viz_port))
+            print("  按 Ctrl+C 停止")
+            _start_dashboard(hypercube, args.viz_port)
+        return hypercube
+
+    # ----------------------------------------------------------------
+    # PostgreSQL / MySQL path – uses the native connectors
+    # ----------------------------------------------------------------
     print(f"正在连接 {args.db} 数据库...")
-    
-    # 创建连接器
+
     conn_params = {
         "host": args.host,
-        "port": args.port,
+        "port": args.db_port,
         "user": args.user,
         "password": args.password,
         "database": args.database,
     }
-    
+
     if args.db == "postgres":
-        connector = PostgresConnector(conn_params)
+        connector = _get_connector("postgres", conn_params)
     elif args.db == "mysql":
-        connector = MySQLConnector(conn_params)
+        connector = _get_connector("mysql", conn_params)
     else:
         print(f"不支持的数据库类型: {args.db}")
         sys.exit(1)
@@ -117,7 +159,7 @@ def scan_database(args):
         loc = PhysicalLocation(
             db_type=args.db,
             host=args.host,
-            port=args.port,
+            port=args.db_port,
             database=args.database,
             schema=sig.schema_name,
             table=table_name,
@@ -174,28 +216,26 @@ def scan_database(args):
         print("\n启动可视化仪表盘...")
         print("  访问 http://127.0.0.1:8050")
         print("  按 Ctrl+C 停止")
-        app = create_hypercube_dashboard(hypercube)
-        app.run(debug=True, port=args.port)
-    
+        _start_dashboard(hypercube, args.viz_port)
+
     return hypercube
 
 
 def visualize_data(args):
     """从文件加载并可视化"""
     print(f"正在加载数据: {args.input}")
-    
+
     with open(args.input, "r", encoding="utf-8") as f:
         data = json.load(f)
-    
+
     # 重建超立方体
     hypercube = HyperCube()
-    
+
     # 这里简化处理，实际应该从JSON重建完整对象
     print(f"数据点数量: {len(data.get('data_points', []))}")
-    
+
     # 启动可视化
-    app = create_hypercube_dashboard(hypercube)
-    app.run(debug=True, port=args.port)
+    _start_dashboard(hypercube, args.port)
 
 
 def query_by_color(args):
@@ -243,19 +283,32 @@ def hex_color_distance(c1: str, c2: str) -> float:
 def main():
     parser = argparse.ArgumentParser(description="四维矩阵数据库可视化工具")
     subparsers = parser.add_subparsers(dest="command", help="可用命令")
-    
+
     # scan 命令
-    scan_parser = subparsers.add_parser("scan", help="扫描数据库")
-    scan_parser.add_argument("--db", choices=["postgres", "mysql"], required=True, help="数据库类型")
+    scan_parser = subparsers.add_parser("scan", help="扫描数据库并生成四维矩阵")
+    scan_parser.add_argument(
+        "--db", choices=["postgres", "mysql", "sqlite"], required=True,
+        help="数据库类型 (postgres / mysql / sqlite)",
+    )
+    # SQLite-specific
+    scan_parser.add_argument(
+        "--sqlite-path", metavar="FILE",
+        help="SQLite 数据库文件路径 (仅 --db sqlite 时使用)",
+    )
+    # PostgreSQL / MySQL connection parameters
     scan_parser.add_argument("--host", default="localhost", help="主机地址")
-    scan_parser.add_argument("--port", type=int, help="端口")
-    scan_parser.add_argument("--user", required=True, help="用户名")
-    scan_parser.add_argument("--password", required=True, help="密码")
-    scan_parser.add_argument("--database", required=True, help="数据库名")
-    scan_parser.add_argument("--schema", help="Schema名称")
-    scan_parser.add_argument("--output", "-o", help="输出JSON文件路径")
+    scan_parser.add_argument("--db-port", type=int, dest="db_port", help="数据库端口")
+    scan_parser.add_argument("--user", help="用户名")
+    scan_parser.add_argument("--password", help="密码")
+    scan_parser.add_argument("--database", help="数据库名")
+    scan_parser.add_argument("--schema", help="Schema 名称")
+    # Output / visualisation
+    scan_parser.add_argument("--output", "-o", help="输出 JSON 文件路径")
     scan_parser.add_argument("--visualize", "-v", action="store_true", help="启动可视化")
-    scan_parser.add_argument("--port", dest="viz_port", type=int, default=8050, help="可视化服务端口")
+    scan_parser.add_argument(
+        "--viz-port", dest="viz_port", type=int, default=8050,
+        help="可视化服务端口 (默认: 8050)",
+    )
     
     # visualize 命令
     viz_parser = subparsers.add_parser("visualize", help="可视化数据文件")
@@ -269,9 +322,8 @@ def main():
     query_parser.add_argument("--threshold", "-t", type=float, default=50, help="颜色相似度阈值")
     
     args = parser.parse_args()
-    
+
     if args.command == "scan":
-        args.port = args.viz_port
         scan_database(args)
     elif args.command == "visualize":
         visualize_data(args)

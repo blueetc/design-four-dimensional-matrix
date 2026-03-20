@@ -97,6 +97,7 @@ from .relationship_extractor import (
 )
 from .changelog import ChangeTracker, CellChange, VersionSnapshot, ChangeType
 from .optimizer import MatrixOptimizer, OptimizationSuggestion
+from .demo import build_hypercube_from_adapter
 
 __all__ = [
     # Core dual-matrix (original)
@@ -188,4 +189,6 @@ __all__ = [
     # Matrix optimizer (stage-1 → stage-2)
     "MatrixOptimizer",
     "OptimizationSuggestion",
+    # Demo: DB → dual-matrix builder
+    "build_hypercube_from_adapter",
 ]
