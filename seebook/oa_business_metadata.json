@@ -1,0 +1,2669 @@
+[
+  {
+    "table_name": "mv_form_data_inst",
+    "table_comment": "",
+    "display_name": "mv_form_data_inst",
+    "row_count": 814,
+    "columns": [
+      {
+        "name": "form_data_inst_id",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "form_data_inst_id",
+        "value_distribution": [
+          [
+            "200001",
+            1
+          ],
+          [
+            "200002",
+            1
+          ],
+          [
+            "200003",
+            1
+          ],
+          [
+            "200004",
+            1
+          ],
+          [
+            "200005",
+            1
+          ]
+        ]
+      },
+      {
+        "name": "formset_inst_id",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "formset_inst_id",
+        "value_distribution": [
+          [
+            "100001",
+            2
+          ],
+          [
+            "100002",
+            2
+          ],
+          [
+            "100003",
+            2
+          ],
+          [
+            "100004",
+            2
+          ],
+          [
+            "100005",
+            2
+          ]
+        ]
+      },
+      {
+        "name": "name",
+        "type": "varchar(32)",
+        "comment": "",
+        "display_name": "name",
+        "value_distribution": [
+          [
+            "content",
+            409
+          ],
+          [
+            "subject",
+            405
+          ]
+        ]
+      },
+      {
+        "name": "type",
+        "type": "smallint",
+        "comment": "",
+        "display_name": "type",
+        "value_distribution": [
+          [
+            "1",
+            814
+          ]
+        ]
+      },
+      {
+        "name": "value",
+        "type": "varchar(4000)",
+        "comment": "",
+        "display_name": "value",
+        "value_distribution": [
+          [
+            "2023年01月24日通告：关于信息化建设规划的通告的内容",
+            4
+          ],
+          [
+            "2023年02月06日通告：关于营商环境优化方案的通告的内容",
+            4
+          ],
+          [
+            "2023年01月08日意见：关于经济工作会议纪要的意见的内容",
+            4
+          ],
+          [
+            "2023年02月17日批复：关于年度工作总结的批复的内容",
+            4
+          ],
+          [
+            "2023年01月07日决定：关于经济工作会议纪要的决定的内容",
+            4
+          ]
+        ]
+      },
+      {
+        "name": "descri",
+        "type": "varchar(128)",
+        "comment": "",
+        "display_name": "descri",
+        "value_distribution": [
+          [
+            "正文",
+            814
+          ]
+        ]
+      },
+      {
+        "name": "guid",
+        "type": "varchar(36)",
+        "comment": "",
+        "display_name": "guid",
+        "value_distribution": [
+          [
+            "DGUID-200001",
+            1
+          ],
+          [
+            "DGUID-200002",
+            1
+          ],
+          [
+            "DGUID-200003",
+            1
+          ],
+          [
+            "DGUID-200004",
+            1
+          ],
+          [
+            "DGUID-200005",
+            1
+          ]
+        ]
+      },
+      {
+        "name": "ext1",
+        "type": "varchar(256)",
+        "comment": "",
+        "display_name": "ext1",
+        "value_distribution": []
+      },
+      {
+        "name": "ext2",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "ext2",
+        "value_distribution": []
+      },
+      {
+        "name": "ext3",
+        "type": "smallint",
+        "comment": "",
+        "display_name": "ext3",
+        "value_distribution": []
+      },
+      {
+        "name": "ext4",
+        "type": "datetime(6)",
+        "comment": "",
+        "display_name": "ext4",
+        "value_distribution": []
+      },
+      {
+        "name": "ext5",
+        "type": "varchar(64)",
+        "comment": "",
+        "display_name": "ext5",
+        "value_distribution": []
+      }
+    ]
+  },
+  {
+    "table_name": "mv_form_file",
+    "table_comment": "",
+    "display_name": "mv_form_file",
+    "row_count": 814,
+    "columns": [
+      {
+        "name": "file_id",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "file_id",
+        "value_distribution": [
+          [
+            "300001",
+            1
+          ],
+          [
+            "300002",
+            1
+          ],
+          [
+            "300003",
+            1
+          ],
+          [
+            "300004",
+            1
+          ],
+          [
+            "300005",
+            1
+          ]
+        ]
+      },
+      {
+        "name": "file_name",
+        "type": "varchar(256)",
+        "comment": "",
+        "display_name": "file_name",
+        "value_distribution": [
+          [
+            "办公发〔2023〕100001号_附件1.pdf",
+            1
+          ],
+          [
+            "办公发〔2023〕100001号_附件2.pdf",
+            1
+          ],
+          [
+            "办公发〔2023〕100002号_附件1.pdf",
+            1
+          ],
+          [
+            "办公发〔2023〕100002号_附件2.pdf",
+            1
+          ],
+          [
+            "办公发〔2023〕100003号_附件1.pdf",
+            1
+          ]
+        ]
+      },
+      {
+        "name": "content_type",
+        "type": "varchar(32)",
+        "comment": "",
+        "display_name": "content_type",
+        "value_distribution": [
+          [
+            "application/pdf",
+            814
+          ]
+        ]
+      },
+      {
+        "name": "title",
+        "type": "varchar(260)",
+        "comment": "",
+        "display_name": "title",
+        "value_distribution": [
+          [
+            "附件1-2023年01月08日意见：关于经济工作",
+            2
+          ],
+          [
+            "附件2-2023年01月08日意见：关于经济工作",
+            2
+          ],
+          [
+            "附件2-2023年01月07日决定：关于经济工作",
+            2
+          ],
+          [
+            "附件1-2023年01月24日通告：关于信息化建",
+            2
+          ],
+          [
+            "附件1-2023年01月07日决定：关于经济工作",
+            2
+          ]
+        ]
+      },
+      {
+        "name": "real_path",
+        "type": "varchar(2048)",
+        "comment": "",
+        "display_name": "real_path",
+        "value_distribution": [
+          [
+            "/data/2023/300001.pdf",
+            1
+          ],
+          [
+            "/data/2023/300002.pdf",
+            1
+          ],
+          [
+            "/data/2023/300003.pdf",
+            1
+          ],
+          [
+            "/data/2023/300004.pdf",
+            1
+          ],
+          [
+            "/data/2023/300005.pdf",
+            1
+          ]
+        ]
+      },
+      {
+        "name": "version",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "version",
+        "value_distribution": [
+          [
+            "1",
+            814
+          ]
+        ]
+      },
+      {
+        "name": "uploader_id",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "uploader_id",
+        "value_distribution": [
+          [
+            "1003",
+            302
+          ],
+          [
+            "1001",
+            278
+          ],
+          [
+            "1002",
+            234
+          ]
+        ]
+      },
+      {
+        "name": "uploader",
+        "type": "varchar(64)",
+        "comment": "",
+        "display_name": "uploader",
+        "value_distribution": [
+          [
+            "王强",
+            302
+          ],
+          [
+            "张伟",
+            278
+          ],
+          [
+            "李娜",
+            234
+          ]
+        ]
+      },
+      {
+        "name": "upload_time",
+        "type": "datetime(6)",
+        "comment": "",
+        "display_name": "upload_time",
+        "value_distribution": [
+          [
+            "2023-01-01 11:01:00",
+            2
+          ],
+          [
+            "2023-01-01 14:09:00",
+            2
+          ],
+          [
+            "2023-01-01 13:49:00",
+            2
+          ],
+          [
+            "2023-01-01 18:14:00",
+            2
+          ],
+          [
+            "2023-01-01 16:23:00",
+            2
+          ]
+        ]
+      },
+      {
+        "name": "object_type",
+        "type": "smallint",
+        "comment": "",
+        "display_name": "object_type",
+        "value_distribution": [
+          [
+            "1",
+            814
+          ]
+        ]
+      },
+      {
+        "name": "object_id",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "object_id",
+        "value_distribution": [
+          [
+            "100001",
+            2
+          ],
+          [
+            "100002",
+            2
+          ],
+          [
+            "100003",
+            2
+          ],
+          [
+            "100004",
+            2
+          ],
+          [
+            "100005",
+            2
+          ]
+        ]
+      },
+      {
+        "name": "encrypt_type",
+        "type": "smallint",
+        "comment": "",
+        "display_name": "encrypt_type",
+        "value_distribution": [
+          [
+            "0",
+            814
+          ]
+        ]
+      },
+      {
+        "name": "guid",
+        "type": "varchar(36)",
+        "comment": "",
+        "display_name": "guid",
+        "value_distribution": [
+          [
+            "FGUID-300001",
+            1
+          ],
+          [
+            "FGUID-300002",
+            1
+          ],
+          [
+            "FGUID-300003",
+            1
+          ],
+          [
+            "FGUID-300004",
+            1
+          ],
+          [
+            "FGUID-300005",
+            1
+          ]
+        ]
+      },
+      {
+        "name": "passkey",
+        "type": "varchar(256)",
+        "comment": "",
+        "display_name": "passkey",
+        "value_distribution": []
+      },
+      {
+        "name": "folder_id",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "folder_id",
+        "value_distribution": [
+          [
+            "9",
+            100
+          ],
+          [
+            "2",
+            96
+          ],
+          [
+            "5",
+            96
+          ],
+          [
+            "7",
+            94
+          ],
+          [
+            "3",
+            92
+          ]
+        ]
+      },
+      {
+        "name": "folder_type",
+        "type": "varchar(20)",
+        "comment": "",
+        "display_name": "folder_type",
+        "value_distribution": [
+          [
+            "doc",
+            814
+          ]
+        ]
+      },
+      {
+        "name": "ext1",
+        "type": "varchar(200)",
+        "comment": "",
+        "display_name": "ext1",
+        "value_distribution": []
+      },
+      {
+        "name": "ext2",
+        "type": "varchar(200)",
+        "comment": "",
+        "display_name": "ext2",
+        "value_distribution": []
+      },
+      {
+        "name": "file_info_id",
+        "type": "varchar(32)",
+        "comment": "",
+        "display_name": "file_info_id",
+        "value_distribution": [
+          [
+            "FILE-300001",
+            1
+          ],
+          [
+            "FILE-300002",
+            1
+          ],
+          [
+            "FILE-300003",
+            1
+          ],
+          [
+            "FILE-300004",
+            1
+          ],
+          [
+            "FILE-300005",
+            1
+          ]
+        ]
+      },
+      {
+        "name": "file_info_preview_url",
+        "type": "varchar(500)",
+        "comment": "",
+        "display_name": "file_info_preview_url",
+        "value_distribution": [
+          [
+            "https://preview.com/300001",
+            1
+          ],
+          [
+            "https://preview.com/300002",
+            1
+          ],
+          [
+            "https://preview.com/300003",
+            1
+          ],
+          [
+            "https://preview.com/300004",
+            1
+          ],
+          [
+            "https://preview.com/300005",
+            1
+          ]
+        ]
+      },
+      {
+        "name": "file_size",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "file_size",
+        "value_distribution": [
+          [
+            "56188",
+            2
+          ],
+          [
+            "36849",
+            2
+          ],
+          [
+            "90030",
+            2
+          ],
+          [
+            "27086",
+            1
+          ],
+          [
+            "96219",
+            1
+          ]
+        ]
+      },
+      {
+        "name": "group_code",
+        "type": "varchar(32)",
+        "comment": "",
+        "display_name": "group_code",
+        "value_distribution": [
+          [
+            "附件1",
+            407
+          ],
+          [
+            "附件2",
+            407
+          ]
+        ]
+      },
+      {
+        "name": "group_name",
+        "type": "varchar(64)",
+        "comment": "",
+        "display_name": "group_name",
+        "value_distribution": [
+          [
+            "附件1",
+            407
+          ],
+          [
+            "附件2",
+            407
+          ]
+        ]
+      },
+      {
+        "name": "display_order",
+        "type": "int",
+        "comment": "",
+        "display_name": "display_order",
+        "value_distribution": [
+          [
+            "0",
+            407
+          ],
+          [
+            "1",
+            407
+          ]
+        ]
+      },
+      {
+        "name": "secret_level",
+        "type": "varchar(32)",
+        "comment": "",
+        "display_name": "secret_level",
+        "value_distribution": [
+          [
+            "内部",
+            282
+          ],
+          [
+            "秘密",
+            272
+          ],
+          [
+            "公开",
+            260
+          ]
+        ]
+      },
+      {
+        "name": "file_workitem_id",
+        "type": "int",
+        "comment": "",
+        "display_name": "file_workitem_id",
+        "value_distribution": [
+          [
+            "0",
+            814
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "table_name": "mv_formset_inst",
+    "table_comment": "",
+    "display_name": "mv_formset_inst",
+    "row_count": 407,
+    "columns": [
+      {
+        "name": "formset_inst_id",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "formset_inst_id",
+        "value_distribution": [
+          [
+            "100001",
+            1
+          ],
+          [
+            "100002",
+            1
+          ],
+          [
+            "100003",
+            1
+          ],
+          [
+            "100004",
+            1
+          ],
+          [
+            "100005",
+            1
+          ]
+        ]
+      },
+      {
+        "name": "proc_id",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "proc_id",
+        "value_distribution": [
+          [
+            "6286",
+            2
+          ],
+          [
+            "1517",
+            2
+          ],
+          [
+            "5914",
+            2
+          ],
+          [
+            "9767",
+            2
+          ],
+          [
+            "3184",
+            2
+          ]
+        ]
+      },
+      {
+        "name": "form_id",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "form_id",
+        "value_distribution": [
+          [
+            "952",
+            3
+          ],
+          [
+            "841",
+            3
+          ],
+          [
+            "125",
+            3
+          ],
+          [
+            "303",
+            3
+          ],
+          [
+            "920",
+            3
+          ]
+        ]
+      },
+      {
+        "name": "folder_id",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "folder_id",
+        "value_distribution": [
+          [
+            "9",
+            50
+          ],
+          [
+            "2",
+            48
+          ],
+          [
+            "5",
+            48
+          ],
+          [
+            "7",
+            47
+          ],
+          [
+            "3",
+            46
+          ]
+        ]
+      },
+      {
+        "name": "formset_id",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "formset_id",
+        "value_distribution": [
+          [
+            "3",
+            87
+          ],
+          [
+            "2",
+            86
+          ],
+          [
+            "1",
+            84
+          ],
+          [
+            "5",
+            79
+          ],
+          [
+            "4",
+            71
+          ]
+        ]
+      },
+      {
+        "name": "name",
+        "type": "varchar(1024)",
+        "comment": "",
+        "display_name": "name",
+        "value_distribution": [
+          [
+            "2023年01月24日通告：关于信息化建设规划的通告",
+            2
+          ],
+          [
+            "2023年02月06日通告：关于营商环境优化方案的通告",
+            2
+          ],
+          [
+            "2023年01月08日意见：关于经济工作会议纪要的意见",
+            2
+          ],
+          [
+            "2023年02月17日批复：关于年度工作总结的批复",
+            2
+          ],
+          [
+            "2023年01月07日决定：关于经济工作会议纪要的决定",
+            2
+          ]
+        ]
+      },
+      {
+        "name": "status",
+        "type": "smallint",
+        "comment": "",
+        "display_name": "status",
+        "value_distribution": [
+          [
+            "1",
+            211
+          ],
+          [
+            "2",
+            196
+          ]
+        ]
+      },
+      {
+        "name": "to_pigeonhole",
+        "type": "smallint",
+        "comment": "",
+        "display_name": "to_pigeonhole",
+        "value_distribution": [
+          [
+            "0",
+            211
+          ],
+          [
+            "1",
+            196
+          ]
+        ]
+      },
+      {
+        "name": "to_repository",
+        "type": "smallint",
+        "comment": "",
+        "display_name": "to_repository",
+        "value_distribution": [
+          [
+            "0",
+            211
+          ],
+          [
+            "1",
+            196
+          ]
+        ]
+      },
+      {
+        "name": "locking_activity",
+        "type": "varchar(128)",
+        "comment": "",
+        "display_name": "locking_activity",
+        "value_distribution": [
+          [
+            "起草",
+            116
+          ],
+          [
+            "审核",
+            95
+          ]
+        ]
+      },
+      {
+        "name": "formset_name",
+        "type": "varchar(128)",
+        "comment": "",
+        "display_name": "formset_name",
+        "value_distribution": [
+          [
+            "标准意见表单",
+            56
+          ],
+          [
+            "标准决定表单",
+            49
+          ],
+          [
+            "标准议案表单",
+            48
+          ],
+          [
+            "标准通告表单",
+            40
+          ],
+          [
+            "标准请示表单",
+            40
+          ]
+        ]
+      },
+      {
+        "name": "text_mode",
+        "type": "varchar(16)",
+        "comment": "",
+        "display_name": "text_mode",
+        "value_distribution": [
+          [
+            "HTML",
+            407
+          ]
+        ]
+      },
+      {
+        "name": "folder_name",
+        "type": "varchar(128)",
+        "comment": "",
+        "display_name": "folder_name",
+        "value_distribution": [
+          [
+            "2023年公文",
+            407
+          ]
+        ]
+      },
+      {
+        "name": "creator_id",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "creator_id",
+        "value_distribution": [
+          [
+            "1003",
+            151
+          ],
+          [
+            "1001",
+            139
+          ],
+          [
+            "1002",
+            117
+          ]
+        ]
+      },
+      {
+        "name": "creator",
+        "type": "varchar(64)",
+        "comment": "",
+        "display_name": "creator",
+        "value_distribution": [
+          [
+            "王强",
+            151
+          ],
+          [
+            "张伟",
+            139
+          ],
+          [
+            "李娜",
+            117
+          ]
+        ]
+      },
+      {
+        "name": "create_time",
+        "type": "datetime(6)",
+        "comment": "",
+        "display_name": "create_time",
+        "value_distribution": [
+          [
+            "2023-01-01 09:01:00",
+            1
+          ],
+          [
+            "2023-01-01 12:09:00",
+            1
+          ],
+          [
+            "2023-01-01 11:49:00",
+            1
+          ],
+          [
+            "2023-01-01 16:14:00",
+            1
+          ],
+          [
+            "2023-01-01 14:23:00",
+            1
+          ]
+        ]
+      },
+      {
+        "name": "locker_id",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "locker_id",
+        "value_distribution": [
+          [
+            "1003",
+            86
+          ],
+          [
+            "1001",
+            67
+          ],
+          [
+            "1002",
+            58
+          ]
+        ]
+      },
+      {
+        "name": "locker",
+        "type": "varchar(64)",
+        "comment": "",
+        "display_name": "locker",
+        "value_distribution": [
+          [
+            "王强",
+            86
+          ],
+          [
+            "张伟",
+            67
+          ],
+          [
+            "李娜",
+            58
+          ]
+        ]
+      },
+      {
+        "name": "lock_time",
+        "type": "datetime(6)",
+        "comment": "",
+        "display_name": "lock_time",
+        "value_distribution": [
+          [
+            "2023-01-01 11:01:00",
+            1
+          ],
+          [
+            "2023-01-01 14:09:00",
+            1
+          ],
+          [
+            "2023-01-01 13:49:00",
+            1
+          ],
+          [
+            "2023-01-01 18:14:00",
+            1
+          ],
+          [
+            "2023-01-02 11:18:00",
+            1
+          ]
+        ]
+      },
+      {
+        "name": "ext1",
+        "type": "varchar(128)",
+        "comment": "",
+        "display_name": "ext1",
+        "value_distribution": []
+      },
+      {
+        "name": "ext2",
+        "type": "varchar(128)",
+        "comment": "",
+        "display_name": "ext2",
+        "value_distribution": []
+      },
+      {
+        "name": "ext3",
+        "type": "varchar(128)",
+        "comment": "",
+        "display_name": "ext3",
+        "value_distribution": []
+      },
+      {
+        "name": "ext4",
+        "type": "varchar(128)",
+        "comment": "",
+        "display_name": "ext4",
+        "value_distribution": []
+      },
+      {
+        "name": "ext5",
+        "type": "varchar(128)",
+        "comment": "",
+        "display_name": "ext5",
+        "value_distribution": []
+      },
+      {
+        "name": "ext6",
+        "type": "varchar(128)",
+        "comment": "",
+        "display_name": "ext6",
+        "value_distribution": [
+          [
+            "紧急",
+            140
+          ],
+          [
+            "普通",
+            134
+          ],
+          [
+            "特急",
+            133
+          ]
+        ]
+      },
+      {
+        "name": "ext7",
+        "type": "varchar(128)",
+        "comment": "",
+        "display_name": "ext7",
+        "value_distribution": []
+      },
+      {
+        "name": "ext8",
+        "type": "varchar(128)",
+        "comment": "",
+        "display_name": "ext8",
+        "value_distribution": []
+      },
+      {
+        "name": "ext9",
+        "type": "varchar(128)",
+        "comment": "",
+        "display_name": "ext9",
+        "value_distribution": []
+      },
+      {
+        "name": "ext10",
+        "type": "varchar(128)",
+        "comment": "",
+        "display_name": "ext10",
+        "value_distribution": []
+      },
+      {
+        "name": "ext11",
+        "type": "varchar(128)",
+        "comment": "",
+        "display_name": "ext11",
+        "value_distribution": []
+      },
+      {
+        "name": "ext12",
+        "type": "varchar(128)",
+        "comment": "",
+        "display_name": "ext12",
+        "value_distribution": [
+          [
+            "办公发〔2023〕100001号",
+            1
+          ],
+          [
+            "办公发〔2023〕100002号",
+            1
+          ],
+          [
+            "办公发〔2023〕100003号",
+            1
+          ],
+          [
+            "办公发〔2023〕100004号",
+            1
+          ],
+          [
+            "发展发〔2023〕100005号",
+            1
+          ]
+        ]
+      },
+      {
+        "name": "ext13",
+        "type": "varchar(128)",
+        "comment": "",
+        "display_name": "ext13",
+        "value_distribution": []
+      },
+      {
+        "name": "ext14",
+        "type": "varchar(128)",
+        "comment": "",
+        "display_name": "ext14",
+        "value_distribution": []
+      },
+      {
+        "name": "ext15",
+        "type": "varchar(128)",
+        "comment": "",
+        "display_name": "ext15",
+        "value_distribution": []
+      },
+      {
+        "name": "ext16",
+        "type": "varchar(256)",
+        "comment": "",
+        "display_name": "ext16",
+        "value_distribution": []
+      },
+      {
+        "name": "ext17",
+        "type": "varchar(256)",
+        "comment": "",
+        "display_name": "ext17",
+        "value_distribution": []
+      },
+      {
+        "name": "ext18",
+        "type": "varchar(256)",
+        "comment": "",
+        "display_name": "ext18",
+        "value_distribution": []
+      },
+      {
+        "name": "ext19",
+        "type": "varchar(256)",
+        "comment": "",
+        "display_name": "ext19",
+        "value_distribution": []
+      },
+      {
+        "name": "ext20",
+        "type": "varchar(512)",
+        "comment": "",
+        "display_name": "ext20",
+        "value_distribution": []
+      },
+      {
+        "name": "ext21",
+        "type": "varchar(512)",
+        "comment": "",
+        "display_name": "ext21",
+        "value_distribution": []
+      },
+      {
+        "name": "ext22",
+        "type": "varchar(1024)",
+        "comment": "",
+        "display_name": "ext22",
+        "value_distribution": []
+      },
+      {
+        "name": "ext23",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "ext23",
+        "value_distribution": []
+      },
+      {
+        "name": "ext24",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "ext24",
+        "value_distribution": []
+      },
+      {
+        "name": "ext25",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "ext25",
+        "value_distribution": []
+      },
+      {
+        "name": "ext26",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "ext26",
+        "value_distribution": []
+      },
+      {
+        "name": "ext27",
+        "type": "datetime(6)",
+        "comment": "",
+        "display_name": "ext27",
+        "value_distribution": []
+      },
+      {
+        "name": "ext28",
+        "type": "datetime(6)",
+        "comment": "",
+        "display_name": "ext28",
+        "value_distribution": []
+      },
+      {
+        "name": "ext29",
+        "type": "datetime(6)",
+        "comment": "",
+        "display_name": "ext29",
+        "value_distribution": []
+      },
+      {
+        "name": "ext30",
+        "type": "datetime(6)",
+        "comment": "",
+        "display_name": "ext30",
+        "value_distribution": []
+      },
+      {
+        "name": "sys_type",
+        "type": "smallint",
+        "comment": "",
+        "display_name": "sys_type",
+        "value_distribution": []
+      },
+      {
+        "name": "guid",
+        "type": "varchar(36)",
+        "comment": "",
+        "display_name": "guid",
+        "value_distribution": [
+          [
+            "GUID-100001",
+            1
+          ],
+          [
+            "GUID-100002",
+            1
+          ],
+          [
+            "GUID-100003",
+            1
+          ],
+          [
+            "GUID-100004",
+            1
+          ],
+          [
+            "GUID-100005",
+            1
+          ]
+        ]
+      },
+      {
+        "name": "creator_dept",
+        "type": "varchar(64)",
+        "comment": "",
+        "display_name": "creator_dept",
+        "value_distribution": [
+          [
+            "发展规划处",
+            151
+          ],
+          [
+            "办公厅",
+            139
+          ],
+          [
+            "政策法规处",
+            117
+          ]
+        ]
+      },
+      {
+        "name": "creator_dept_id",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "creator_dept_id",
+        "value_distribution": [
+          [
+            "2003",
+            151
+          ],
+          [
+            "2001",
+            139
+          ],
+          [
+            "2002",
+            117
+          ]
+        ]
+      },
+      {
+        "name": "formset_guid",
+        "type": "varchar(36)",
+        "comment": "",
+        "display_name": "formset_guid",
+        "value_distribution": [
+          [
+            "FGUID-100001",
+            1
+          ],
+          [
+            "FGUID-100002",
+            1
+          ],
+          [
+            "FGUID-100003",
+            1
+          ],
+          [
+            "FGUID-100004",
+            1
+          ],
+          [
+            "FGUID-100005",
+            1
+          ]
+        ]
+      },
+      {
+        "name": "creator_unit",
+        "type": "varchar(64)",
+        "comment": "",
+        "display_name": "creator_unit",
+        "value_distribution": [
+          [
+            "市人民政府",
+            407
+          ]
+        ]
+      },
+      {
+        "name": "creator_unit_id",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "creator_unit_id",
+        "value_distribution": [
+          [
+            "10001",
+            407
+          ]
+        ]
+      },
+      {
+        "name": "urgent",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "urgent",
+        "value_distribution": [
+          [
+            "2",
+            142
+          ],
+          [
+            "0",
+            140
+          ],
+          [
+            "1",
+            125
+          ]
+        ]
+      },
+      {
+        "name": "secret_level",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "secret_level",
+        "value_distribution": [
+          [
+            "1",
+            144
+          ],
+          [
+            "0",
+            139
+          ],
+          [
+            "2",
+            124
+          ]
+        ]
+      },
+      {
+        "name": "secret_level_name",
+        "type": "varchar(64)",
+        "comment": "",
+        "display_name": "secret_level_name",
+        "value_distribution": [
+          [
+            "内部",
+            141
+          ],
+          [
+            "秘密",
+            136
+          ],
+          [
+            "公开",
+            130
+          ]
+        ]
+      },
+      {
+        "name": "status_time",
+        "type": "datetime(6)",
+        "comment": "",
+        "display_name": "status_time",
+        "value_distribution": [
+          [
+            "2023-01-06 14:23:00",
+            1
+          ],
+          [
+            "2023-01-07 17:36:00",
+            1
+          ],
+          [
+            "2023-01-08 16:42:00",
+            1
+          ],
+          [
+            "2023-01-08 17:06:00",
+            1
+          ],
+          [
+            "2023-01-09 12:38:00",
+            1
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "table_name": "mv_opinion_inst",
+    "table_comment": "",
+    "display_name": "mv_opinion_inst",
+    "row_count": 407,
+    "columns": [
+      {
+        "name": "opinion_inst_id",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "opinion_inst_id",
+        "value_distribution": [
+          [
+            "400001",
+            1
+          ],
+          [
+            "400002",
+            1
+          ],
+          [
+            "400003",
+            1
+          ],
+          [
+            "400004",
+            1
+          ],
+          [
+            "400005",
+            1
+          ]
+        ]
+      },
+      {
+        "name": "formset_inst_id",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "formset_inst_id",
+        "value_distribution": [
+          [
+            "100001",
+            1
+          ],
+          [
+            "100002",
+            1
+          ],
+          [
+            "100003",
+            1
+          ],
+          [
+            "100004",
+            1
+          ],
+          [
+            "100005",
+            1
+          ]
+        ]
+      },
+      {
+        "name": "editor_id",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "editor_id",
+        "value_distribution": [
+          [
+            "1003",
+            151
+          ],
+          [
+            "1001",
+            139
+          ],
+          [
+            "1002",
+            117
+          ]
+        ]
+      },
+      {
+        "name": "editor",
+        "type": "varchar(64)",
+        "comment": "",
+        "display_name": "editor",
+        "value_distribution": [
+          [
+            "王强",
+            151
+          ],
+          [
+            "张伟",
+            139
+          ],
+          [
+            "李娜",
+            117
+          ]
+        ]
+      },
+      {
+        "name": "edit_time",
+        "type": "datetime(6)",
+        "comment": "",
+        "display_name": "edit_time",
+        "value_distribution": [
+          [
+            "2023-01-02 09:01:00",
+            1
+          ],
+          [
+            "2023-01-02 12:09:00",
+            1
+          ],
+          [
+            "2023-01-02 11:49:00",
+            1
+          ],
+          [
+            "2023-01-02 16:14:00",
+            1
+          ],
+          [
+            "2023-01-02 14:23:00",
+            1
+          ]
+        ]
+      },
+      {
+        "name": "content",
+        "type": "varchar(4000)",
+        "comment": "",
+        "display_name": "content",
+        "value_distribution": [
+          [
+            "同意办理",
+            407
+          ]
+        ]
+      },
+      {
+        "name": "form_object_id",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "form_object_id",
+        "value_distribution": [
+          [
+            "100001",
+            1
+          ],
+          [
+            "100002",
+            1
+          ],
+          [
+            "100003",
+            1
+          ],
+          [
+            "100004",
+            1
+          ],
+          [
+            "100005",
+            1
+          ]
+        ]
+      },
+      {
+        "name": "workitem_id",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "workitem_id",
+        "value_distribution": [
+          [
+            "500001",
+            1
+          ],
+          [
+            "500003",
+            1
+          ],
+          [
+            "500005",
+            1
+          ],
+          [
+            "500007",
+            1
+          ],
+          [
+            "500009",
+            1
+          ]
+        ]
+      },
+      {
+        "name": "activity_id",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "activity_id",
+        "value_distribution": [
+          [
+            "100",
+            407
+          ]
+        ]
+      },
+      {
+        "name": "activity_name",
+        "type": "varchar(128)",
+        "comment": "",
+        "display_name": "activity_name",
+        "value_distribution": [
+          [
+            "审核",
+            407
+          ]
+        ]
+      },
+      {
+        "name": "binding_data_name",
+        "type": "varchar(32)",
+        "comment": "",
+        "display_name": "binding_data_name",
+        "value_distribution": [
+          [
+            "opinion",
+            407
+          ]
+        ]
+      },
+      {
+        "name": "opinion_type",
+        "type": "smallint",
+        "comment": "",
+        "display_name": "opinion_type",
+        "value_distribution": [
+          [
+            "1",
+            407
+          ]
+        ]
+      },
+      {
+        "name": "editor_dept",
+        "type": "varchar(64)",
+        "comment": "",
+        "display_name": "editor_dept",
+        "value_distribution": [
+          [
+            "发展规划处",
+            151
+          ],
+          [
+            "办公厅",
+            139
+          ],
+          [
+            "政策法规处",
+            117
+          ]
+        ]
+      },
+      {
+        "name": "editor_dept_id",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "editor_dept_id",
+        "value_distribution": [
+          [
+            "2003",
+            151
+          ],
+          [
+            "2001",
+            139
+          ],
+          [
+            "2002",
+            117
+          ]
+        ]
+      },
+      {
+        "name": "leader_id",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "leader_id",
+        "value_distribution": []
+      },
+      {
+        "name": "leader",
+        "type": "varchar(64)",
+        "comment": "",
+        "display_name": "leader",
+        "value_distribution": []
+      },
+      {
+        "name": "leader_dept_id",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "leader_dept_id",
+        "value_distribution": []
+      },
+      {
+        "name": "leader_dept",
+        "type": "varchar(64)",
+        "comment": "",
+        "display_name": "leader_dept",
+        "value_distribution": []
+      },
+      {
+        "name": "leader_edit_dt",
+        "type": "datetime(6)",
+        "comment": "",
+        "display_name": "leader_edit_dt",
+        "value_distribution": []
+      },
+      {
+        "name": "guid",
+        "type": "varchar(36)",
+        "comment": "",
+        "display_name": "guid",
+        "value_distribution": [
+          [
+            "OGUID-400001",
+            1
+          ],
+          [
+            "OGUID-400002",
+            1
+          ],
+          [
+            "OGUID-400003",
+            1
+          ],
+          [
+            "OGUID-400004",
+            1
+          ],
+          [
+            "OGUID-400005",
+            1
+          ]
+        ]
+      },
+      {
+        "name": "spawned",
+        "type": "smallint",
+        "comment": "",
+        "display_name": "spawned",
+        "value_distribution": [
+          [
+            "0",
+            407
+          ]
+        ]
+      },
+      {
+        "name": "act_as_id",
+        "type": "varchar(128)",
+        "comment": "",
+        "display_name": "act_as_id",
+        "value_distribution": []
+      },
+      {
+        "name": "act_as",
+        "type": "varchar(512)",
+        "comment": "",
+        "display_name": "act_as",
+        "value_distribution": []
+      },
+      {
+        "name": "editor_priority",
+        "type": "varchar(32)",
+        "comment": "",
+        "display_name": "editor_priority",
+        "value_distribution": [
+          [
+            "normal",
+            407
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "table_name": "mv_workitem",
+    "table_comment": "",
+    "display_name": "mv_workitem",
+    "row_count": 814,
+    "columns": [
+      {
+        "name": "workitem_id",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "workitem_id",
+        "value_distribution": [
+          [
+            "500001",
+            1
+          ],
+          [
+            "500002",
+            1
+          ],
+          [
+            "500003",
+            1
+          ],
+          [
+            "500004",
+            1
+          ],
+          [
+            "500005",
+            1
+          ]
+        ]
+      },
+      {
+        "name": "activity_type",
+        "type": "smallint",
+        "comment": "",
+        "display_name": "activity_type",
+        "value_distribution": [
+          [
+            "1",
+            814
+          ]
+        ]
+      },
+      {
+        "name": "status",
+        "type": "smallint",
+        "comment": "",
+        "display_name": "status",
+        "value_distribution": [
+          [
+            "1",
+            421
+          ],
+          [
+            "0",
+            393
+          ]
+        ]
+      },
+      {
+        "name": "parent_act_id",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "parent_act_id",
+        "value_distribution": []
+      },
+      {
+        "name": "src_activity_id",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "src_activity_id",
+        "value_distribution": []
+      },
+      {
+        "name": "sender_id",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "sender_id",
+        "value_distribution": [
+          [
+            "1003",
+            302
+          ],
+          [
+            "1001",
+            278
+          ],
+          [
+            "1002",
+            234
+          ]
+        ]
+      },
+      {
+        "name": "receiver_id",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "receiver_id",
+        "value_distribution": [
+          [
+            "1003",
+            291
+          ],
+          [
+            "1001",
+            264
+          ],
+          [
+            "1002",
+            259
+          ]
+        ]
+      },
+      {
+        "name": "receiver_dept",
+        "type": "varchar(128)",
+        "comment": "",
+        "display_name": "receiver_dept",
+        "value_distribution": [
+          [
+            "发展规划处",
+            293
+          ],
+          [
+            "政策法规处",
+            270
+          ],
+          [
+            "办公厅",
+            251
+          ]
+        ]
+      },
+      {
+        "name": "delegant_id",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "delegant_id",
+        "value_distribution": []
+      },
+      {
+        "name": "sender",
+        "type": "varchar(64)",
+        "comment": "",
+        "display_name": "sender",
+        "value_distribution": [
+          [
+            "王强",
+            302
+          ],
+          [
+            "张伟",
+            278
+          ],
+          [
+            "李娜",
+            234
+          ]
+        ]
+      },
+      {
+        "name": "receiver",
+        "type": "varchar(64)",
+        "comment": "",
+        "display_name": "receiver",
+        "value_distribution": [
+          [
+            "王强",
+            281
+          ],
+          [
+            "李娜",
+            276
+          ],
+          [
+            "张伟",
+            257
+          ]
+        ]
+      },
+      {
+        "name": "delegant",
+        "type": "varchar(64)",
+        "comment": "",
+        "display_name": "delegant",
+        "value_distribution": []
+      },
+      {
+        "name": "job_name",
+        "type": "varchar(1024)",
+        "comment": "",
+        "display_name": "job_name",
+        "value_distribution": [
+          [
+            "2023年01月24日通告：关于信息化建设规划的通告",
+            4
+          ],
+          [
+            "2023年02月06日通告：关于营商环境优化方案的通告",
+            4
+          ],
+          [
+            "2023年01月08日意见：关于经济工作会议纪要的意见",
+            4
+          ],
+          [
+            "2023年02月17日批复：关于年度工作总结的批复",
+            4
+          ],
+          [
+            "2023年01月07日决定：关于经济工作会议纪要的决定",
+            4
+          ]
+        ]
+      },
+      {
+        "name": "receive_time",
+        "type": "datetime(6)",
+        "comment": "",
+        "display_name": "receive_time",
+        "value_distribution": [
+          [
+            "2023-01-28 17:44:00",
+            2
+          ],
+          [
+            "2023-01-14 13:22:00",
+            2
+          ],
+          [
+            "2023-04-16 13:55:00",
+            1
+          ],
+          [
+            "2023-01-01 10:01:00",
+            1
+          ],
+          [
+            "2023-01-01 12:09:00",
+            1
+          ]
+        ]
+      },
+      {
+        "name": "open_time",
+        "type": "datetime(6)",
+        "comment": "",
+        "display_name": "open_time",
+        "value_distribution": [
+          [
+            "2023-01-01 12:01:00",
+            2
+          ],
+          [
+            "2023-01-01 15:09:00",
+            2
+          ],
+          [
+            "2023-01-01 14:49:00",
+            2
+          ],
+          [
+            "2023-01-01 19:14:00",
+            2
+          ],
+          [
+            "2023-01-01 17:23:00",
+            2
+          ]
+        ]
+      },
+      {
+        "name": "save_time",
+        "type": "datetime(6)",
+        "comment": "",
+        "display_name": "save_time",
+        "value_distribution": []
+      },
+      {
+        "name": "complete_time",
+        "type": "datetime(6)",
+        "comment": "",
+        "display_name": "complete_time",
+        "value_distribution": [
+          [
+            "2023-01-03 09:01:00",
+            2
+          ],
+          [
+            "2023-01-03 12:09:00",
+            2
+          ],
+          [
+            "2023-01-03 11:49:00",
+            2
+          ],
+          [
+            "2023-01-03 16:14:00",
+            2
+          ],
+          [
+            "2023-01-03 14:23:00",
+            2
+          ]
+        ]
+      },
+      {
+        "name": "expire_date",
+        "type": "datetime(6)",
+        "comment": "",
+        "display_name": "expire_date",
+        "value_distribution": [
+          [
+            "2023-01-08 09:01:00",
+            2
+          ],
+          [
+            "2023-01-08 12:09:00",
+            2
+          ],
+          [
+            "2023-01-08 11:49:00",
+            2
+          ],
+          [
+            "2023-01-08 16:14:00",
+            2
+          ],
+          [
+            "2023-01-08 14:23:00",
+            2
+          ]
+        ]
+      },
+      {
+        "name": "urgent_status",
+        "type": "varchar(32)",
+        "comment": "",
+        "display_name": "urgent_status",
+        "value_distribution": [
+          [
+            "紧急",
+            280
+          ],
+          [
+            "普通",
+            268
+          ],
+          [
+            "特急",
+            266
+          ]
+        ]
+      },
+      {
+        "name": "urge_date",
+        "type": "datetime(6)",
+        "comment": "",
+        "display_name": "urge_date",
+        "value_distribution": []
+      },
+      {
+        "name": "app_type_name",
+        "type": "varchar(64)",
+        "comment": "",
+        "display_name": "app_type_name",
+        "value_distribution": [
+          [
+            "公文流转",
+            814
+          ]
+        ]
+      },
+      {
+        "name": "dest",
+        "type": "varchar(512)",
+        "comment": "",
+        "display_name": "dest",
+        "value_distribution": [
+          [
+            "转下一环节",
+            814
+          ]
+        ]
+      },
+      {
+        "name": "formset_id",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "formset_id",
+        "value_distribution": [
+          [
+            "3",
+            174
+          ],
+          [
+            "2",
+            172
+          ],
+          [
+            "1",
+            168
+          ],
+          [
+            "5",
+            158
+          ],
+          [
+            "4",
+            142
+          ]
+        ]
+      },
+      {
+        "name": "work_type",
+        "type": "smallint",
+        "comment": "",
+        "display_name": "work_type",
+        "value_distribution": [
+          [
+            "1",
+            814
+          ]
+        ]
+      },
+      {
+        "name": "src_workitem_id",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "src_workitem_id",
+        "value_distribution": []
+      },
+      {
+        "name": "act_id",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "act_id",
+        "value_distribution": [
+          [
+            "100",
+            814
+          ]
+        ]
+      },
+      {
+        "name": "formset_inst_id",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "formset_inst_id",
+        "value_distribution": [
+          [
+            "100001",
+            2
+          ],
+          [
+            "100002",
+            2
+          ],
+          [
+            "100003",
+            2
+          ],
+          [
+            "100004",
+            2
+          ],
+          [
+            "100005",
+            2
+          ]
+        ]
+      },
+      {
+        "name": "flow_inst_id",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "flow_inst_id",
+        "value_distribution": [
+          [
+            "10000",
+            814
+          ]
+        ]
+      },
+      {
+        "name": "flow_id",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "flow_id",
+        "value_distribution": [
+          [
+            "1",
+            814
+          ]
+        ]
+      },
+      {
+        "name": "receiver_dept_id",
+        "type": "bigint",
+        "comment": "",
+        "display_name": "receiver_dept_id",
+        "value_distribution": [
+          [
+            "2003",
+            300
+          ],
+          [
+            "2002",
+            266
+          ],
+          [
+            "2001",
+            248
+          ]
+        ]
+      },
+      {
+        "name": "act_as5",
+        "type": "varchar(64)",
+        "comment": "",
+        "display_name": "act_as5",
+        "value_distribution": []
+      },
+      {
+        "name": "act_as1",
+        "type": "varchar(64)",
+        "comment": "",
+        "display_name": "act_as1",
+        "value_distribution": []
+      },
+      {
+        "name": "query_scope",
+        "type": "int",
+        "comment": "",
+        "display_name": "query_scope",
+        "value_distribution": [
+          [
+            "1",
+            814
+          ]
+        ]
+      },
+      {
+        "name": "act_as2",
+        "type": "varchar(64)",
+        "comment": "",
+        "display_name": "act_as2",
+        "value_distribution": []
+      },
+      {
+        "name": "act_as3_id",
+        "type": "int",
+        "comment": "",
+        "display_name": "act_as3_id",
+        "value_distribution": []
+      },
+      {
+        "name": "act_as1_id",
+        "type": "int",
+        "comment": "",
+        "display_name": "act_as1_id",
+        "value_distribution": []
+      },
+      {
+        "name": "spawn_from",
+        "type": "int",
+        "comment": "",
+        "display_name": "spawn_from",
+        "value_distribution": []
+      },
+      {
+        "name": "act_as3",
+        "type": "varchar(64)",
+        "comment": "",
+        "display_name": "act_as3",
+        "value_distribution": []
+      },
+      {
+        "name": "act_as4_id",
+        "type": "int",
+        "comment": "",
+        "display_name": "act_as4_id",
+        "value_distribution": []
+      },
+      {
+        "name": "status_word",
+        "type": "varchar(32)",
+        "comment": "",
+        "display_name": "status_word",
+        "value_distribution": [
+          [
+            "已办",
+            814
+          ]
+        ]
+      },
+      {
+        "name": "act_as_more_id",
+        "type": "varchar(128)",
+        "comment": "",
+        "display_name": "act_as_more_id",
+        "value_distribution": []
+      },
+      {
+        "name": "act_as_more",
+        "type": "varchar(512)",
+        "comment": "",
+        "display_name": "act_as_more",
+        "value_distribution": []
+      },
+      {
+        "name": "act_as5_id",
+        "type": "int",
+        "comment": "",
+        "display_name": "act_as5_id",
+        "value_distribution": []
+      },
+      {
+        "name": "act_as2_id",
+        "type": "int",
+        "comment": "",
+        "display_name": "act_as2_id",
+        "value_distribution": []
+      },
+      {
+        "name": "act_as4",
+        "type": "varchar(64)",
+        "comment": "",
+        "display_name": "act_as4",
+        "value_distribution": []
+      },
+      {
+        "name": "work_remark",
+        "type": "varchar(512)",
+        "comment": "",
+        "display_name": "work_remark",
+        "value_distribution": []
+      },
+      {
+        "name": "status_no",
+        "type": "varchar(16)",
+        "comment": "",
+        "display_name": "status_no",
+        "value_distribution": [
+          [
+            "1",
+            814
+          ]
+        ]
+      },
+      {
+        "name": "completed_type",
+        "type": "int",
+        "comment": "",
+        "display_name": "completed_type",
+        "value_distribution": [
+          [
+            "1",
+            814
+          ]
+        ]
+      },
+      {
+        "name": "process_type",
+        "type": "int",
+        "comment": "",
+        "display_name": "process_type",
+        "value_distribution": [
+          [
+            "2",
+            814
+          ]
+        ]
+      }
+    ]
+  }
+]
