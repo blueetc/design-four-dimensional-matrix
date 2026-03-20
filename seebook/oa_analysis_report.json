@@ -1,0 +1,48 @@
+{
+  "database": "oa",
+  "scan_time": "2026-03-20T09:13:10.221976",
+  "summary": {
+    "total_tables": 5,
+    "total_columns": 171,
+    "total_rows": 3256,
+    "domain_count": 2,
+    "relationships": 0
+  },
+  "domains": {
+    "0": {
+      "name": "mv",
+      "tables": [
+        "mv_form_data_inst",
+        "mv_form_file",
+        "mv_formset_inst",
+        "mv_opinion_inst"
+      ],
+      "table_count": 4,
+      "description": "\u5305\u542b4\u5f20\u8868\uff0c\u51712,442\u884c\u6570\u636e\uff0c\u5e26\u65f6\u95f4\u6233"
+    },
+    "1": {
+      "name": "workitem",
+      "tables": [
+        "mv_workitem"
+      ],
+      "table_count": 1,
+      "description": "\u5305\u542b1\u5f20\u8868\uff0c\u5171814\u884c\u6570\u636e\uff0c\u5e26\u65f6\u95f4\u6233"
+    }
+  },
+  "lifecycle": {
+    "mv_form_data_inst": "mature",
+    "mv_form_file": "mature",
+    "mv_formset_inst": "legacy",
+    "mv_opinion_inst": "legacy",
+    "mv_workitem": "mature"
+  },
+  "quality": {
+    "total_cells": 5,
+    "total_issues": 0,
+    "severity_distribution": {},
+    "issue_type_distribution": {},
+    "average_score": 100.0,
+    "min_score": 100.0,
+    "max_score": 100.0
+  }
+}

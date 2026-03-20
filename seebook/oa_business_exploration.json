@@ -1,0 +1,775 @@
+[
+  {
+    "table_name": "mv_form_data_inst",
+    "table_business_name": "表单数据实例",
+    "row_count": 814,
+    "fields": [
+      {
+        "field_name": "form_data_inst_id",
+        "business_name": "编号",
+        "values": [
+          [
+            "200001",
+            1
+          ],
+          [
+            "200002",
+            1
+          ],
+          [
+            "200003",
+            1
+          ]
+        ],
+        "is_category": false
+      },
+      {
+        "field_name": "formset_inst_id",
+        "business_name": "编号",
+        "values": [
+          [
+            "100001",
+            2
+          ],
+          [
+            "100002",
+            2
+          ],
+          [
+            "100003",
+            2
+          ]
+        ],
+        "is_category": true
+      },
+      {
+        "field_name": "name",
+        "business_name": "名称",
+        "values": [
+          [
+            "content",
+            409
+          ],
+          [
+            "subject",
+            405
+          ]
+        ],
+        "is_category": true
+      },
+      {
+        "field_name": "type",
+        "business_name": "类型",
+        "values": [
+          [
+            "1",
+            814
+          ]
+        ],
+        "is_category": true
+      },
+      {
+        "field_name": "value",
+        "business_name": "value",
+        "values": [
+          [
+            "2023年01月24日通告：关于信息化建",
+            4
+          ],
+          [
+            "2023年01月08日意见：关于经济工作",
+            4
+          ],
+          [
+            "2023年01月07日决定：关于经济工作",
+            4
+          ]
+        ],
+        "is_category": true
+      },
+      {
+        "field_name": "descri",
+        "business_name": "descri",
+        "values": [
+          [
+            "正文",
+            814
+          ]
+        ],
+        "is_category": true
+      },
+      {
+        "field_name": "guid",
+        "business_name": "编号",
+        "values": [
+          [
+            "DGUID-200001",
+            1
+          ],
+          [
+            "DGUID-200002",
+            1
+          ],
+          [
+            "DGUID-200003",
+            1
+          ]
+        ],
+        "is_category": false
+      },
+      {
+        "field_name": "ext1",
+        "business_name": "ext1",
+        "values": [],
+        "is_category": false
+      },
+      {
+        "field_name": "ext2",
+        "business_name": "ext2",
+        "values": [],
+        "is_category": false
+      },
+      {
+        "field_name": "ext3",
+        "business_name": "ext3",
+        "values": [],
+        "is_category": false
+      }
+    ]
+  },
+  {
+    "table_name": "mv_form_file",
+    "table_business_name": "表单文件",
+    "row_count": 814,
+    "fields": [
+      {
+        "field_name": "file_id",
+        "business_name": "编号",
+        "values": [
+          [
+            "300001",
+            1
+          ],
+          [
+            "300002",
+            1
+          ],
+          [
+            "300003",
+            1
+          ]
+        ],
+        "is_category": false
+      },
+      {
+        "field_name": "file_name",
+        "business_name": "名称",
+        "values": [
+          [
+            "办公发〔2023〕100001号_附件1",
+            1
+          ],
+          [
+            "办公发〔2023〕100001号_附件2",
+            1
+          ],
+          [
+            "办公发〔2023〕100002号_附件1",
+            1
+          ]
+        ],
+        "is_category": false
+      },
+      {
+        "field_name": "content_type",
+        "business_name": "类型",
+        "values": [
+          [
+            "application/pdf",
+            814
+          ]
+        ],
+        "is_category": true
+      },
+      {
+        "field_name": "title",
+        "business_name": "标题",
+        "values": [
+          [
+            "附件1-2023年01月08日意见：关于",
+            2
+          ],
+          [
+            "附件2-2023年01月07日决定：关于",
+            2
+          ],
+          [
+            "附件1-2023年01月07日决定：关于",
+            2
+          ]
+        ],
+        "is_category": true
+      },
+      {
+        "field_name": "real_path",
+        "business_name": "real_path",
+        "values": [
+          [
+            "/data/2023/300001.pd",
+            1
+          ],
+          [
+            "/data/2023/300002.pd",
+            1
+          ],
+          [
+            "/data/2023/300003.pd",
+            1
+          ]
+        ],
+        "is_category": false
+      },
+      {
+        "field_name": "version",
+        "business_name": "version",
+        "values": [
+          [
+            "1",
+            814
+          ]
+        ],
+        "is_category": true
+      },
+      {
+        "field_name": "uploader_id",
+        "business_name": "编号",
+        "values": [
+          [
+            "1003",
+            302
+          ],
+          [
+            "1001",
+            278
+          ],
+          [
+            "1002",
+            234
+          ]
+        ],
+        "is_category": true
+      },
+      {
+        "field_name": "uploader",
+        "business_name": "uploader",
+        "values": [
+          [
+            "王强",
+            302
+          ],
+          [
+            "张伟",
+            278
+          ],
+          [
+            "李娜",
+            234
+          ]
+        ],
+        "is_category": true
+      },
+      {
+        "field_name": "upload_time",
+        "business_name": "upload_time",
+        "values": [],
+        "is_category": false
+      },
+      {
+        "field_name": "object_type",
+        "business_name": "类型",
+        "values": [
+          [
+            "1",
+            814
+          ]
+        ],
+        "is_category": true
+      }
+    ]
+  },
+  {
+    "table_name": "mv_formset_inst",
+    "table_business_name": "表单集实例",
+    "row_count": 407,
+    "fields": [
+      {
+        "field_name": "formset_inst_id",
+        "business_name": "编号",
+        "values": [
+          [
+            "100001",
+            1
+          ],
+          [
+            "100002",
+            1
+          ],
+          [
+            "100003",
+            1
+          ]
+        ],
+        "is_category": false
+      },
+      {
+        "field_name": "proc_id",
+        "business_name": "编号",
+        "values": [
+          [
+            "6286",
+            2
+          ],
+          [
+            "5914",
+            2
+          ],
+          [
+            "3184",
+            2
+          ]
+        ],
+        "is_category": true
+      },
+      {
+        "field_name": "form_id",
+        "business_name": "编号",
+        "values": [
+          [
+            "125",
+            3
+          ],
+          [
+            "952",
+            3
+          ],
+          [
+            "920",
+            3
+          ]
+        ],
+        "is_category": true
+      },
+      {
+        "field_name": "folder_id",
+        "business_name": "编号",
+        "values": [
+          [
+            "9",
+            50
+          ],
+          [
+            "2",
+            48
+          ],
+          [
+            "5",
+            48
+          ]
+        ],
+        "is_category": true
+      },
+      {
+        "field_name": "formset_id",
+        "business_name": "编号",
+        "values": [
+          [
+            "3",
+            87
+          ],
+          [
+            "2",
+            86
+          ],
+          [
+            "1",
+            84
+          ]
+        ],
+        "is_category": true
+      },
+      {
+        "field_name": "name",
+        "business_name": "名称",
+        "values": [
+          [
+            "2023年01月24日通告：关于信息化建",
+            2
+          ],
+          [
+            "2023年01月08日意见：关于经济工作",
+            2
+          ],
+          [
+            "2023年01月07日决定：关于经济工作",
+            2
+          ]
+        ],
+        "is_category": true
+      },
+      {
+        "field_name": "status",
+        "business_name": "状态",
+        "values": [
+          [
+            "1",
+            211
+          ],
+          [
+            "2",
+            196
+          ]
+        ],
+        "is_category": true
+      },
+      {
+        "field_name": "to_pigeonhole",
+        "business_name": "to_pigeonhole",
+        "values": [
+          [
+            "1",
+            196
+          ]
+        ],
+        "is_category": true
+      },
+      {
+        "field_name": "to_repository",
+        "business_name": "to_repository",
+        "values": [
+          [
+            "1",
+            196
+          ]
+        ],
+        "is_category": true
+      },
+      {
+        "field_name": "locking_activity",
+        "business_name": "locking_activity",
+        "values": [
+          [
+            "起草",
+            116
+          ],
+          [
+            "审核",
+            95
+          ]
+        ],
+        "is_category": true
+      }
+    ]
+  },
+  {
+    "table_name": "mv_opinion_inst",
+    "table_business_name": "意见实例",
+    "row_count": 407,
+    "fields": [
+      {
+        "field_name": "opinion_inst_id",
+        "business_name": "编号",
+        "values": [
+          [
+            "400001",
+            1
+          ],
+          [
+            "400002",
+            1
+          ],
+          [
+            "400003",
+            1
+          ]
+        ],
+        "is_category": false
+      },
+      {
+        "field_name": "formset_inst_id",
+        "business_name": "编号",
+        "values": [
+          [
+            "100001",
+            1
+          ],
+          [
+            "100002",
+            1
+          ],
+          [
+            "100003",
+            1
+          ]
+        ],
+        "is_category": false
+      },
+      {
+        "field_name": "editor_id",
+        "business_name": "编号",
+        "values": [
+          [
+            "1003",
+            151
+          ],
+          [
+            "1001",
+            139
+          ],
+          [
+            "1002",
+            117
+          ]
+        ],
+        "is_category": true
+      },
+      {
+        "field_name": "editor",
+        "business_name": "editor",
+        "values": [
+          [
+            "王强",
+            151
+          ],
+          [
+            "张伟",
+            139
+          ],
+          [
+            "李娜",
+            117
+          ]
+        ],
+        "is_category": true
+      },
+      {
+        "field_name": "edit_time",
+        "business_name": "edit_time",
+        "values": [],
+        "is_category": false
+      },
+      {
+        "field_name": "content",
+        "business_name": "内容",
+        "values": [
+          [
+            "同意办理",
+            407
+          ]
+        ],
+        "is_category": true
+      },
+      {
+        "field_name": "form_object_id",
+        "business_name": "编号",
+        "values": [
+          [
+            "100001",
+            1
+          ],
+          [
+            "100002",
+            1
+          ],
+          [
+            "100003",
+            1
+          ]
+        ],
+        "is_category": false
+      },
+      {
+        "field_name": "workitem_id",
+        "business_name": "编号",
+        "values": [
+          [
+            "500001",
+            1
+          ],
+          [
+            "500003",
+            1
+          ],
+          [
+            "500005",
+            1
+          ]
+        ],
+        "is_category": false
+      },
+      {
+        "field_name": "activity_id",
+        "business_name": "编号",
+        "values": [
+          [
+            "100",
+            407
+          ]
+        ],
+        "is_category": true
+      },
+      {
+        "field_name": "activity_name",
+        "business_name": "名称",
+        "values": [
+          [
+            "审核",
+            407
+          ]
+        ],
+        "is_category": true
+      }
+    ]
+  },
+  {
+    "table_name": "mv_workitem",
+    "table_business_name": "工作项",
+    "row_count": 814,
+    "fields": [
+      {
+        "field_name": "workitem_id",
+        "business_name": "编号",
+        "values": [
+          [
+            "500001",
+            1
+          ],
+          [
+            "500002",
+            1
+          ],
+          [
+            "500003",
+            1
+          ]
+        ],
+        "is_category": false
+      },
+      {
+        "field_name": "activity_type",
+        "business_name": "类型",
+        "values": [
+          [
+            "1",
+            814
+          ]
+        ],
+        "is_category": true
+      },
+      {
+        "field_name": "status",
+        "business_name": "状态",
+        "values": [
+          [
+            "1",
+            421
+          ]
+        ],
+        "is_category": true
+      },
+      {
+        "field_name": "parent_act_id",
+        "business_name": "编号",
+        "values": [],
+        "is_category": false
+      },
+      {
+        "field_name": "src_activity_id",
+        "business_name": "编号",
+        "values": [],
+        "is_category": false
+      },
+      {
+        "field_name": "sender_id",
+        "business_name": "编号",
+        "values": [
+          [
+            "1003",
+            302
+          ],
+          [
+            "1001",
+            278
+          ],
+          [
+            "1002",
+            234
+          ]
+        ],
+        "is_category": true
+      },
+      {
+        "field_name": "receiver_id",
+        "business_name": "编号",
+        "values": [
+          [
+            "1003",
+            291
+          ],
+          [
+            "1001",
+            264
+          ],
+          [
+            "1002",
+            259
+          ]
+        ],
+        "is_category": true
+      },
+      {
+        "field_name": "receiver_dept",
+        "business_name": "部门",
+        "values": [
+          [
+            "发展规划处",
+            293
+          ],
+          [
+            "政策法规处",
+            270
+          ],
+          [
+            "办公厅",
+            251
+          ]
+        ],
+        "is_category": true
+      },
+      {
+        "field_name": "delegant_id",
+        "business_name": "编号",
+        "values": [],
+        "is_category": false
+      },
+      {
+        "field_name": "sender",
+        "business_name": "sender",
+        "values": [
+          [
+            "王强",
+            302
+          ],
+          [
+            "张伟",
+            278
+          ],
+          [
+            "李娜",
+            234
+          ]
+        ],
+        "is_category": true
+      }
+    ]
+  }
+]

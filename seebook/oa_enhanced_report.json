@@ -1,0 +1,1155 @@
+{
+  "database": "oa",
+  "analysis_time": "2026-03-20T10:00:28.895855",
+  "features": {
+    "real_category_analysis": true,
+    "llm_classification": false,
+    "foreign_key_extraction": true
+  },
+  "summary": {
+    "total_tables": 5,
+    "total_category_fields": 38,
+    "total_foreign_keys": 0
+  },
+  "llm_classifications": [
+    {
+      "table_name": "mv_form_data_inst",
+      "business_domain": "其他",
+      "confidence": 0.3,
+      "reasoning": "基于表名'mv_form_data_inst'和列名分析，未识别到明确的业务特征，暂归为其他域。",
+      "suggested_tags": [
+        "其他"
+      ],
+      "lifecycle_stage": "growth"
+    },
+    {
+      "table_name": "mv_form_file",
+      "business_domain": "订单交易",
+      "confidence": 0.6,
+      "reasoning": "基于表名'mv_form_file'和列名分析，未识别到明确的业务特征，暂归为其他域。",
+      "suggested_tags": [
+        "订单交易"
+      ],
+      "lifecycle_stage": "growth"
+    },
+    {
+      "table_name": "mv_formset_inst",
+      "business_domain": "其他",
+      "confidence": 0.3,
+      "reasoning": "基于表名'mv_formset_inst'和列名分析，未识别到明确的业务特征，暂归为其他域。",
+      "suggested_tags": [
+        "其他",
+        "状态管理"
+      ],
+      "lifecycle_stage": "growth"
+    },
+    {
+      "table_name": "mv_opinion_inst",
+      "business_domain": "商品管理",
+      "confidence": 0.6,
+      "reasoning": "基于表名'mv_opinion_inst'和列名分析，未识别到明确的业务特征，暂归为其他域。",
+      "suggested_tags": [
+        "商品管理"
+      ],
+      "lifecycle_stage": "growth"
+    },
+    {
+      "table_name": "mv_workitem",
+      "business_domain": "商品管理",
+      "confidence": 0.9,
+      "reasoning": "基于表名'mv_workitem'和列名分析，未识别到明确的业务特征，暂归为其他域。",
+      "suggested_tags": [
+        "商品管理",
+        "状态管理"
+      ],
+      "lifecycle_stage": "growth"
+    }
+  ],
+  "category_analysis": {
+    "summary": {
+      "total_tables": 5,
+      "total_category_fields": 38
+    },
+    "tables": [
+      {
+        "table_name": "mv_form_data_inst",
+        "category_fields_count": 1,
+        "fields": [
+          {
+            "field_name": "name",
+            "field_comment": null,
+            "distinct_count": 2,
+            "total_rows": 814,
+            "uniqueness_ratio": 0.0025,
+            "is_category": true,
+            "category_confidence": 0.6498,
+            "inferred_business_type": "其他",
+            "top_values": [
+              {
+                "value": "content",
+                "count": 409,
+                "percentage": 50.25
+              },
+              {
+                "value": "subject",
+                "count": 405,
+                "percentage": 49.75
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "table_name": "mv_form_file",
+        "category_fields_count": 7,
+        "fields": [
+          {
+            "field_name": "uploader_id",
+            "field_comment": null,
+            "distinct_count": 3,
+            "total_rows": 814,
+            "uniqueness_ratio": 0.0037,
+            "is_category": true,
+            "category_confidence": 0.7098,
+            "inferred_business_type": "其他",
+            "top_values": [
+              {
+                "value": "1003",
+                "count": 302,
+                "percentage": 37.1
+              },
+              {
+                "value": "1001",
+                "count": 278,
+                "percentage": 34.15
+              },
+              {
+                "value": "1002",
+                "count": 234,
+                "percentage": 28.75
+              }
+            ]
+          },
+          {
+            "field_name": "uploader",
+            "field_comment": null,
+            "distinct_count": 3,
+            "total_rows": 814,
+            "uniqueness_ratio": 0.0037,
+            "is_category": true,
+            "category_confidence": 0.7098,
+            "inferred_business_type": "其他",
+            "top_values": [
+              {
+                "value": "王强",
+                "count": 302,
+                "percentage": 37.1
+              },
+              {
+                "value": "张伟",
+                "count": 278,
+                "percentage": 34.15
+              },
+              {
+                "value": "李娜",
+                "count": 234,
+                "percentage": 28.75
+              }
+            ]
+          },
+          {
+            "field_name": "folder_id",
+            "field_comment": null,
+            "distinct_count": 10,
+            "total_rows": 814,
+            "uniqueness_ratio": 0.0123,
+            "is_category": true,
+            "category_confidence": 0.7319,
+            "inferred_business_type": "其他",
+            "top_values": [
+              {
+                "value": "9",
+                "count": 100,
+                "percentage": 12.29
+              },
+              {
+                "value": "5",
+                "count": 96,
+                "percentage": 11.79
+              },
+              {
+                "value": "2",
+                "count": 96,
+                "percentage": 11.79
+              },
+              {
+                "value": "7",
+                "count": 94,
+                "percentage": 11.55
+              },
+              {
+                "value": "3",
+                "count": 92,
+                "percentage": 11.3
+              }
+            ]
+          },
+          {
+            "field_name": "group_code",
+            "field_comment": null,
+            "distinct_count": 2,
+            "total_rows": 814,
+            "uniqueness_ratio": 0.0025,
+            "is_category": true,
+            "category_confidence": 0.649,
+            "inferred_business_type": "其他",
+            "top_values": [
+              {
+                "value": "附件1",
+                "count": 407,
+                "percentage": 50.0
+              },
+              {
+                "value": "附件2",
+                "count": 407,
+                "percentage": 50.0
+              }
+            ]
+          },
+          {
+            "field_name": "group_name",
+            "field_comment": null,
+            "distinct_count": 2,
+            "total_rows": 814,
+            "uniqueness_ratio": 0.0025,
+            "is_category": true,
+            "category_confidence": 0.649,
+            "inferred_business_type": "其他",
+            "top_values": [
+              {
+                "value": "附件1",
+                "count": 407,
+                "percentage": 50.0
+              },
+              {
+                "value": "附件2",
+                "count": 407,
+                "percentage": 50.0
+              }
+            ]
+          },
+          {
+            "field_name": "display_order",
+            "field_comment": null,
+            "distinct_count": 2,
+            "total_rows": 814,
+            "uniqueness_ratio": 0.0025,
+            "is_category": true,
+            "category_confidence": 0.649,
+            "inferred_business_type": "其他",
+            "top_values": [
+              {
+                "value": "0",
+                "count": 407,
+                "percentage": 50.0
+              },
+              {
+                "value": "1",
+                "count": 407,
+                "percentage": 50.0
+              }
+            ]
+          },
+          {
+            "field_name": "secret_level",
+            "field_comment": null,
+            "distinct_count": 3,
+            "total_rows": 814,
+            "uniqueness_ratio": 0.0037,
+            "is_category": true,
+            "category_confidence": 0.7025,
+            "inferred_business_type": "级别",
+            "top_values": [
+              {
+                "value": "内部",
+                "count": 282,
+                "percentage": 34.64
+              },
+              {
+                "value": "秘密",
+                "count": 272,
+                "percentage": 33.42
+              },
+              {
+                "value": "公开",
+                "count": 260,
+                "percentage": 31.94
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "table_name": "mv_formset_inst",
+        "category_fields_count": 17,
+        "fields": [
+          {
+            "field_name": "folder_id",
+            "field_comment": null,
+            "distinct_count": 10,
+            "total_rows": 407,
+            "uniqueness_ratio": 0.0246,
+            "is_category": true,
+            "category_confidence": 0.727,
+            "inferred_business_type": "其他",
+            "top_values": [
+              {
+                "value": "9",
+                "count": 50,
+                "percentage": 12.29
+              },
+              {
+                "value": "5",
+                "count": 48,
+                "percentage": 11.79
+              },
+              {
+                "value": "2",
+                "count": 48,
+                "percentage": 11.79
+              },
+              {
+                "value": "7",
+                "count": 47,
+                "percentage": 11.55
+              },
+              {
+                "value": "3",
+                "count": 46,
+                "percentage": 11.3
+              }
+            ]
+          },
+          {
+            "field_name": "formset_id",
+            "field_comment": null,
+            "distinct_count": 5,
+            "total_rows": 407,
+            "uniqueness_ratio": 0.0123,
+            "is_category": true,
+            "category_confidence": 0.7592,
+            "inferred_business_type": "其他",
+            "top_values": [
+              {
+                "value": "3",
+                "count": 87,
+                "percentage": 21.38
+              },
+              {
+                "value": "2",
+                "count": 86,
+                "percentage": 21.13
+              },
+              {
+                "value": "1",
+                "count": 84,
+                "percentage": 20.64
+              },
+              {
+                "value": "5",
+                "count": 79,
+                "percentage": 19.41
+              },
+              {
+                "value": "4",
+                "count": 71,
+                "percentage": 17.44
+              }
+            ]
+          },
+          {
+            "field_name": "status",
+            "field_comment": null,
+            "distinct_count": 2,
+            "total_rows": 407,
+            "uniqueness_ratio": 0.0049,
+            "is_category": true,
+            "category_confidence": 0.6536,
+            "inferred_business_type": "状态",
+            "top_values": [
+              {
+                "value": "1",
+                "count": 211,
+                "percentage": 51.84
+              },
+              {
+                "value": "2",
+                "count": 196,
+                "percentage": 48.16
+              }
+            ]
+          },
+          {
+            "field_name": "to_pigeonhole",
+            "field_comment": null,
+            "distinct_count": 2,
+            "total_rows": 407,
+            "uniqueness_ratio": 0.0049,
+            "is_category": true,
+            "category_confidence": 0.6536,
+            "inferred_business_type": "其他",
+            "top_values": [
+              {
+                "value": "0",
+                "count": 211,
+                "percentage": 51.84
+              },
+              {
+                "value": "1",
+                "count": 196,
+                "percentage": 48.16
+              }
+            ]
+          },
+          {
+            "field_name": "to_repository",
+            "field_comment": null,
+            "distinct_count": 2,
+            "total_rows": 407,
+            "uniqueness_ratio": 0.0049,
+            "is_category": true,
+            "category_confidence": 0.6536,
+            "inferred_business_type": "其他",
+            "top_values": [
+              {
+                "value": "0",
+                "count": 211,
+                "percentage": 51.84
+              },
+              {
+                "value": "1",
+                "count": 196,
+                "percentage": 48.16
+              }
+            ]
+          },
+          {
+            "field_name": "locking_activity",
+            "field_comment": null,
+            "distinct_count": 2,
+            "total_rows": 407,
+            "uniqueness_ratio": 0.0049,
+            "is_category": true,
+            "category_confidence": 0.663,
+            "inferred_business_type": "其他",
+            "top_values": [
+              {
+                "value": "起草",
+                "count": 116,
+                "percentage": 54.98
+              },
+              {
+                "value": "审核",
+                "count": 95,
+                "percentage": 45.02
+              }
+            ]
+          },
+          {
+            "field_name": "formset_name",
+            "field_comment": null,
+            "distinct_count": 10,
+            "total_rows": 407,
+            "uniqueness_ratio": 0.0246,
+            "is_category": true,
+            "category_confidence": 0.7314,
+            "inferred_business_type": "其他",
+            "top_values": [
+              {
+                "value": "标准意见表单",
+                "count": 56,
+                "percentage": 13.76
+              },
+              {
+                "value": "标准决定表单",
+                "count": 49,
+                "percentage": 12.04
+              },
+              {
+                "value": "标准议案表单",
+                "count": 48,
+                "percentage": 11.79
+              },
+              {
+                "value": "标准通告表单",
+                "count": 40,
+                "percentage": 9.83
+              },
+              {
+                "value": "标准请示表单",
+                "count": 40,
+                "percentage": 9.83
+              }
+            ]
+          },
+          {
+            "field_name": "creator_id",
+            "field_comment": null,
+            "distinct_count": 3,
+            "total_rows": 407,
+            "uniqueness_ratio": 0.0074,
+            "is_category": true,
+            "category_confidence": 0.7084,
+            "inferred_business_type": "其他",
+            "top_values": [
+              {
+                "value": "1003",
+                "count": 151,
+                "percentage": 37.1
+              },
+              {
+                "value": "1001",
+                "count": 139,
+                "percentage": 34.15
+              },
+              {
+                "value": "1002",
+                "count": 117,
+                "percentage": 28.75
+              }
+            ]
+          },
+          {
+            "field_name": "creator",
+            "field_comment": null,
+            "distinct_count": 3,
+            "total_rows": 407,
+            "uniqueness_ratio": 0.0074,
+            "is_category": true,
+            "category_confidence": 0.7084,
+            "inferred_business_type": "其他",
+            "top_values": [
+              {
+                "value": "王强",
+                "count": 151,
+                "percentage": 37.1
+              },
+              {
+                "value": "张伟",
+                "count": 139,
+                "percentage": 34.15
+              },
+              {
+                "value": "李娜",
+                "count": 117,
+                "percentage": 28.75
+              }
+            ]
+          },
+          {
+            "field_name": "locker_id",
+            "field_comment": null,
+            "distinct_count": 3,
+            "total_rows": 407,
+            "uniqueness_ratio": 0.0074,
+            "is_category": true,
+            "category_confidence": 0.7193,
+            "inferred_business_type": "其他",
+            "top_values": [
+              {
+                "value": "1003",
+                "count": 86,
+                "percentage": 40.76
+              },
+              {
+                "value": "1001",
+                "count": 67,
+                "percentage": 31.75
+              },
+              {
+                "value": "1002",
+                "count": 58,
+                "percentage": 27.49
+              }
+            ]
+          },
+          {
+            "field_name": "locker",
+            "field_comment": null,
+            "distinct_count": 3,
+            "total_rows": 407,
+            "uniqueness_ratio": 0.0074,
+            "is_category": true,
+            "category_confidence": 0.7193,
+            "inferred_business_type": "其他",
+            "top_values": [
+              {
+                "value": "王强",
+                "count": 86,
+                "percentage": 40.76
+              },
+              {
+                "value": "张伟",
+                "count": 67,
+                "percentage": 31.75
+              },
+              {
+                "value": "李娜",
+                "count": 58,
+                "percentage": 27.49
+              }
+            ]
+          },
+          {
+            "field_name": "ext6",
+            "field_comment": null,
+            "distinct_count": 3,
+            "total_rows": 407,
+            "uniqueness_ratio": 0.0074,
+            "is_category": true,
+            "category_confidence": 0.7002,
+            "inferred_business_type": "其他",
+            "top_values": [
+              {
+                "value": "紧急",
+                "count": 140,
+                "percentage": 34.4
+              },
+              {
+                "value": "普通",
+                "count": 134,
+                "percentage": 32.92
+              },
+              {
+                "value": "特急",
+                "count": 133,
+                "percentage": 32.68
+              }
+            ]
+          },
+          {
+            "field_name": "creator_dept",
+            "field_comment": null,
+            "distinct_count": 3,
+            "total_rows": 407,
+            "uniqueness_ratio": 0.0074,
+            "is_category": true,
+            "category_confidence": 0.7084,
+            "inferred_business_type": "部门",
+            "top_values": [
+              {
+                "value": "发展规划处",
+                "count": 151,
+                "percentage": 37.1
+              },
+              {
+                "value": "办公厅",
+                "count": 139,
+                "percentage": 34.15
+              },
+              {
+                "value": "政策法规处",
+                "count": 117,
+                "percentage": 28.75
+              }
+            ]
+          },
+          {
+            "field_name": "creator_dept_id",
+            "field_comment": null,
+            "distinct_count": 3,
+            "total_rows": 407,
+            "uniqueness_ratio": 0.0074,
+            "is_category": true,
+            "category_confidence": 0.7084,
+            "inferred_business_type": "部门",
+            "top_values": [
+              {
+                "value": "2003",
+                "count": 151,
+                "percentage": 37.1
+              },
+              {
+                "value": "2001",
+                "count": 139,
+                "percentage": 34.15
+              },
+              {
+                "value": "2002",
+                "count": 117,
+                "percentage": 28.75
+              }
+            ]
+          },
+          {
+            "field_name": "urgent",
+            "field_comment": null,
+            "distinct_count": 3,
+            "total_rows": 407,
+            "uniqueness_ratio": 0.0074,
+            "is_category": true,
+            "category_confidence": 0.7017,
+            "inferred_business_type": "其他",
+            "top_values": [
+              {
+                "value": "2",
+                "count": 142,
+                "percentage": 34.89
+              },
+              {
+                "value": "0",
+                "count": 140,
+                "percentage": 34.4
+              },
+              {
+                "value": "1",
+                "count": 125,
+                "percentage": 30.71
+              }
+            ]
+          },
+          {
+            "field_name": "secret_level",
+            "field_comment": null,
+            "distinct_count": 3,
+            "total_rows": 407,
+            "uniqueness_ratio": 0.0074,
+            "is_category": true,
+            "category_confidence": 0.7032,
+            "inferred_business_type": "级别",
+            "top_values": [
+              {
+                "value": "1",
+                "count": 144,
+                "percentage": 35.38
+              },
+              {
+                "value": "0",
+                "count": 139,
+                "percentage": 34.15
+              },
+              {
+                "value": "2",
+                "count": 124,
+                "percentage": 30.47
+              }
+            ]
+          },
+          {
+            "field_name": "secret_level_name",
+            "field_comment": null,
+            "distinct_count": 3,
+            "total_rows": 407,
+            "uniqueness_ratio": 0.0074,
+            "is_category": true,
+            "category_confidence": 0.701,
+            "inferred_business_type": "级别",
+            "top_values": [
+              {
+                "value": "内部",
+                "count": 141,
+                "percentage": 34.64
+              },
+              {
+                "value": "秘密",
+                "count": 136,
+                "percentage": 33.42
+              },
+              {
+                "value": "公开",
+                "count": 130,
+                "percentage": 31.94
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "table_name": "mv_opinion_inst",
+        "category_fields_count": 4,
+        "fields": [
+          {
+            "field_name": "editor_id",
+            "field_comment": null,
+            "distinct_count": 3,
+            "total_rows": 407,
+            "uniqueness_ratio": 0.0074,
+            "is_category": true,
+            "category_confidence": 0.7084,
+            "inferred_business_type": "其他",
+            "top_values": [
+              {
+                "value": "1003",
+                "count": 151,
+                "percentage": 37.1
+              },
+              {
+                "value": "1001",
+                "count": 139,
+                "percentage": 34.15
+              },
+              {
+                "value": "1002",
+                "count": 117,
+                "percentage": 28.75
+              }
+            ]
+          },
+          {
+            "field_name": "editor",
+            "field_comment": null,
+            "distinct_count": 3,
+            "total_rows": 407,
+            "uniqueness_ratio": 0.0074,
+            "is_category": true,
+            "category_confidence": 0.7084,
+            "inferred_business_type": "其他",
+            "top_values": [
+              {
+                "value": "王强",
+                "count": 151,
+                "percentage": 37.1
+              },
+              {
+                "value": "张伟",
+                "count": 139,
+                "percentage": 34.15
+              },
+              {
+                "value": "李娜",
+                "count": 117,
+                "percentage": 28.75
+              }
+            ]
+          },
+          {
+            "field_name": "editor_dept",
+            "field_comment": null,
+            "distinct_count": 3,
+            "total_rows": 407,
+            "uniqueness_ratio": 0.0074,
+            "is_category": true,
+            "category_confidence": 0.7084,
+            "inferred_business_type": "部门",
+            "top_values": [
+              {
+                "value": "发展规划处",
+                "count": 151,
+                "percentage": 37.1
+              },
+              {
+                "value": "办公厅",
+                "count": 139,
+                "percentage": 34.15
+              },
+              {
+                "value": "政策法规处",
+                "count": 117,
+                "percentage": 28.75
+              }
+            ]
+          },
+          {
+            "field_name": "editor_dept_id",
+            "field_comment": null,
+            "distinct_count": 3,
+            "total_rows": 407,
+            "uniqueness_ratio": 0.0074,
+            "is_category": true,
+            "category_confidence": 0.7084,
+            "inferred_business_type": "部门",
+            "top_values": [
+              {
+                "value": "2003",
+                "count": 151,
+                "percentage": 37.1
+              },
+              {
+                "value": "2001",
+                "count": 139,
+                "percentage": 34.15
+              },
+              {
+                "value": "2002",
+                "count": 117,
+                "percentage": 28.75
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "table_name": "mv_workitem",
+        "category_fields_count": 9,
+        "fields": [
+          {
+            "field_name": "status",
+            "field_comment": null,
+            "distinct_count": 2,
+            "total_rows": 814,
+            "uniqueness_ratio": 0.0025,
+            "is_category": true,
+            "category_confidence": 0.6542,
+            "inferred_business_type": "状态",
+            "top_values": [
+              {
+                "value": "1",
+                "count": 421,
+                "percentage": 51.72
+              },
+              {
+                "value": "0",
+                "count": 393,
+                "percentage": 48.28
+              }
+            ]
+          },
+          {
+            "field_name": "sender_id",
+            "field_comment": null,
+            "distinct_count": 3,
+            "total_rows": 814,
+            "uniqueness_ratio": 0.0037,
+            "is_category": true,
+            "category_confidence": 0.7098,
+            "inferred_business_type": "其他",
+            "top_values": [
+              {
+                "value": "1003",
+                "count": 302,
+                "percentage": 37.1
+              },
+              {
+                "value": "1001",
+                "count": 278,
+                "percentage": 34.15
+              },
+              {
+                "value": "1002",
+                "count": 234,
+                "percentage": 28.75
+              }
+            ]
+          },
+          {
+            "field_name": "receiver_id",
+            "field_comment": null,
+            "distinct_count": 3,
+            "total_rows": 814,
+            "uniqueness_ratio": 0.0037,
+            "is_category": true,
+            "category_confidence": 0.7058,
+            "inferred_business_type": "其他",
+            "top_values": [
+              {
+                "value": "1003",
+                "count": 291,
+                "percentage": 35.75
+              },
+              {
+                "value": "1001",
+                "count": 264,
+                "percentage": 32.43
+              },
+              {
+                "value": "1002",
+                "count": 259,
+                "percentage": 31.82
+              }
+            ]
+          },
+          {
+            "field_name": "receiver_dept",
+            "field_comment": null,
+            "distinct_count": 3,
+            "total_rows": 814,
+            "uniqueness_ratio": 0.0037,
+            "is_category": true,
+            "category_confidence": 0.7065,
+            "inferred_business_type": "部门",
+            "top_values": [
+              {
+                "value": "发展规划处",
+                "count": 293,
+                "percentage": 36.0
+              },
+              {
+                "value": "政策法规处",
+                "count": 270,
+                "percentage": 33.17
+              },
+              {
+                "value": "办公厅",
+                "count": 251,
+                "percentage": 30.84
+              }
+            ]
+          },
+          {
+            "field_name": "sender",
+            "field_comment": null,
+            "distinct_count": 3,
+            "total_rows": 814,
+            "uniqueness_ratio": 0.0037,
+            "is_category": true,
+            "category_confidence": 0.7098,
+            "inferred_business_type": "其他",
+            "top_values": [
+              {
+                "value": "王强",
+                "count": 302,
+                "percentage": 37.1
+              },
+              {
+                "value": "张伟",
+                "count": 278,
+                "percentage": 34.15
+              },
+              {
+                "value": "李娜",
+                "count": 234,
+                "percentage": 28.75
+              }
+            ]
+          },
+          {
+            "field_name": "receiver",
+            "field_comment": null,
+            "distinct_count": 3,
+            "total_rows": 814,
+            "uniqueness_ratio": 0.0037,
+            "is_category": true,
+            "category_confidence": 0.7021,
+            "inferred_business_type": "其他",
+            "top_values": [
+              {
+                "value": "王强",
+                "count": 281,
+                "percentage": 34.52
+              },
+              {
+                "value": "李娜",
+                "count": 276,
+                "percentage": 33.91
+              },
+              {
+                "value": "张伟",
+                "count": 257,
+                "percentage": 31.57
+              }
+            ]
+          },
+          {
+            "field_name": "urgent_status",
+            "field_comment": null,
+            "distinct_count": 3,
+            "total_rows": 814,
+            "uniqueness_ratio": 0.0037,
+            "is_category": true,
+            "category_confidence": 0.7017,
+            "inferred_business_type": "状态",
+            "top_values": [
+              {
+                "value": "紧急",
+                "count": 280,
+                "percentage": 34.4
+              },
+              {
+                "value": "普通",
+                "count": 268,
+                "percentage": 32.92
+              },
+              {
+                "value": "特急",
+                "count": 266,
+                "percentage": 32.68
+              }
+            ]
+          },
+          {
+            "field_name": "formset_id",
+            "field_comment": null,
+            "distinct_count": 5,
+            "total_rows": 814,
+            "uniqueness_ratio": 0.0061,
+            "is_category": true,
+            "category_confidence": 0.7617,
+            "inferred_business_type": "其他",
+            "top_values": [
+              {
+                "value": "3",
+                "count": 174,
+                "percentage": 21.38
+              },
+              {
+                "value": "2",
+                "count": 172,
+                "percentage": 21.13
+              },
+              {
+                "value": "1",
+                "count": 168,
+                "percentage": 20.64
+              },
+              {
+                "value": "5",
+                "count": 158,
+                "percentage": 19.41
+              },
+              {
+                "value": "4",
+                "count": 142,
+                "percentage": 17.44
+              }
+            ]
+          },
+          {
+            "field_name": "receiver_dept_id",
+            "field_comment": null,
+            "distinct_count": 3,
+            "total_rows": 814,
+            "uniqueness_ratio": 0.0037,
+            "is_category": true,
+            "category_confidence": 0.7091,
+            "inferred_business_type": "部门",
+            "top_values": [
+              {
+                "value": "2003",
+                "count": 300,
+                "percentage": 36.86
+              },
+              {
+                "value": "2002",
+                "count": 266,
+                "percentage": 32.68
+              },
+              {
+                "value": "2001",
+                "count": 248,
+                "percentage": 30.47
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "insights": [
+      {
+        "type": "most_categories",
+        "table": "mv_formset_inst",
+        "count": 17,
+        "description": "mv_formset_inst 有 17 个分类字段，业务逻辑最复杂"
+      }
+    ],
+    "business_type_distribution": {
+      "其他": 26,
+      "级别": 3,
+      "状态": 3,
+      "部门": 6
+    }
+  },
+  "relationships": {
+    "foreign_keys": {},
+    "relationship_graph": {}
+  }
+}
