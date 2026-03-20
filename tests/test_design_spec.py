@@ -1,7 +1,7 @@
 """Tests for the DesignSpecParser and its integration with the pipeline.
 
 Tests cover:
-1. DesignSpecParser – Markdown, YAML, plain-text, and auto-detection
+1. DesignSpecParser – Markdown, YAML, plain-text, auto-detection, and Word (.docx)
 2. DesignSpec helpers – get_table(), apply_to_metadata(), summary(), bool()
 3. Integration with UnknownDatabaseProcessor.process(spec=...)
 4. Integration with build_hypercube_from_adapter(spec=...)
@@ -441,6 +441,200 @@ foreign_keys: customer_id -> customers.id | product_id -> products.id
 
 
 # ============================================================
+# Word (.docx) parser
+# ============================================================
+
+def _build_docx(tmp_path: Path, tables_section: bool = True) -> Path:
+    """Create a minimal .docx design spec for testing.
+
+    Structure mirrors the Markdown spec used by other tests:
+
+        Heading 1: ecommerce
+        Normal para: description: E-commerce platform
+        Heading 2: tables
+        Heading 3: customers
+          - bullet: description: Customer accounts
+          - bullet: domain: user
+          - bullet: lifecycle: mature
+          - bullet: columns: id, email, name
+          - bullet: tags: core, pii
+        Heading 3: orders
+          - bullet: domain: revenue
+          - bullet: lifecycle: growth
+    """
+    import docx as _docx  # type: ignore[import]
+
+    doc = _docx.Document()
+
+    if tables_section:
+        # DB name as Heading 1
+        doc.add_heading("ecommerce", level=1)
+        # description as normal paragraph
+        doc.add_paragraph("description: E-commerce platform")
+        # "tables" section heading
+        doc.add_heading("tables", level=2)
+
+    # customers table
+    doc.add_heading("customers", level=3)
+    doc.add_paragraph("description: Customer accounts", style="List Bullet")
+    doc.add_paragraph("domain: user", style="List Bullet")
+    doc.add_paragraph("lifecycle: mature", style="List Bullet")
+    doc.add_paragraph("columns: id, email, name", style="List Bullet")
+    doc.add_paragraph("tags: core, pii", style="List Bullet")
+
+    # orders table
+    doc.add_heading("orders", level=3)
+    doc.add_paragraph("domain: revenue", style="List Bullet")
+    doc.add_paragraph("lifecycle: growth", style="List Bullet")
+    doc.add_paragraph("columns: id, customer_id, total", style="List Bullet")
+
+    path = tmp_path / "spec.docx"
+    doc.save(str(path))
+    return path
+
+
+def _build_docx_with_table(tmp_path: Path) -> Path:
+    """Create a .docx where table properties are in a Word table (not bullets)."""
+    import docx as _docx  # type: ignore[import]
+
+    doc = _docx.Document()
+    doc.add_heading("ecommerce", level=1)
+    doc.add_heading("tables", level=2)
+    doc.add_heading("products", level=3)
+
+    # Add a two-column kv table for properties
+    tbl = doc.add_table(rows=4, cols=2)
+    data = [
+        ("description", "Product catalog"),
+        ("domain",      "product"),
+        ("lifecycle",   "mature"),
+    ]
+    for i, (k, v) in enumerate(data):
+        tbl.rows[i].cells[0].text = k
+        tbl.rows[i].cells[1].text = v
+    # Last row: columns header row
+    tbl.rows[3].cells[0].text = "columns"
+    tbl.rows[3].cells[1].text = "id, sku, name, price"
+
+    path = tmp_path / "spec_tbl.docx"
+    doc.save(str(path))
+    return path
+
+
+_SKIP_DOCX = pytest.mark.skipif(
+    __import__("importlib").util.find_spec("docx") is None,
+    reason="python-docx not installed",
+)
+
+
+@_SKIP_DOCX
+class TestWordParser:
+    """Tests for .docx → DesignSpec parsing."""
+
+    def test_parse_file_docx_database_name(self, tmp_path: Path):
+        path = _build_docx(tmp_path)
+        spec = DesignSpecParser.parse_file(str(path))
+        assert spec.database_name == "ecommerce"
+
+    def test_parse_file_docx_table_count(self, tmp_path: Path):
+        path = _build_docx(tmp_path)
+        spec = DesignSpecParser.parse_file(str(path))
+        assert len(spec.tables) == 2
+
+    def test_parse_file_docx_domain(self, tmp_path: Path):
+        path = _build_docx(tmp_path)
+        spec = DesignSpecParser.parse_file(str(path))
+        assert spec.tables["customers"].domain == "user"
+        assert spec.tables["orders"].domain == "revenue"
+
+    def test_parse_file_docx_lifecycle(self, tmp_path: Path):
+        path = _build_docx(tmp_path)
+        spec = DesignSpecParser.parse_file(str(path))
+        assert spec.tables["customers"].lifecycle == "mature"
+        assert spec.tables["orders"].lifecycle == "growth"
+
+    def test_parse_file_docx_columns(self, tmp_path: Path):
+        path = _build_docx(tmp_path)
+        spec = DesignSpecParser.parse_file(str(path))
+        cols = spec.tables["customers"].columns
+        assert "id" in cols
+        assert "email" in cols
+
+    def test_parse_file_docx_tags(self, tmp_path: Path):
+        path = _build_docx(tmp_path)
+        spec = DesignSpecParser.parse_file(str(path))
+        tags = spec.tables["customers"].tags
+        assert "core" in tags
+        assert "pii" in tags
+
+    def test_parse_file_docx_description(self, tmp_path: Path):
+        path = _build_docx(tmp_path)
+        spec = DesignSpecParser.parse_file(str(path))
+        assert "Customer" in spec.tables["customers"].description
+
+    def test_parse_file_docx_returns_spec_type(self, tmp_path: Path):
+        path = _build_docx(tmp_path)
+        spec = DesignSpecParser.parse_file(str(path))
+        assert isinstance(spec, DesignSpec)
+
+    def test_nonexistent_docx_returns_empty(self):
+        spec = DesignSpecParser.parse_file("/nonexistent/path/spec.docx")
+        assert not spec
+
+    def test_word_table_properties(self, tmp_path: Path):
+        """Properties expressed as a Word table are correctly parsed."""
+        path = _build_docx_with_table(tmp_path)
+        spec = DesignSpecParser.parse_file(str(path))
+        ts = spec.tables.get("products")
+        assert ts is not None
+        assert ts.domain == "product"
+        assert ts.lifecycle == "mature"
+
+    def test_parse_file_docx_integration_with_processor(self, tmp_path: Path):
+        """Full round-trip: .docx → spec → UnknownDatabaseProcessor."""
+        path = _build_docx(tmp_path)
+        spec = DesignSpecParser.parse_file(str(path))
+
+        metadata = [
+            {"table_name": "customers", "columns": [], "row_count": 100,
+             "column_count": 3, "indexes": [], "primary_key": "id",
+             "foreign_keys": [], "schema_name": "public"},
+            {"table_name": "orders", "columns": [], "row_count": 500,
+             "column_count": 4, "indexes": [], "primary_key": "id",
+             "foreign_keys": [], "schema_name": "public"},
+        ]
+
+        proc = UnknownDatabaseProcessor()
+        result = proc.process(metadata, spec=spec)
+
+        z_c = result["domain_mapping"]["customers"]
+        assert result["domains"][z_c]["name"] == "user"
+
+        z_o = result["domain_mapping"]["orders"]
+        assert result["domains"][z_o]["name"] == "revenue"
+
+        assert result["lifecycle_mapping"]["customers"] == "mature"
+        assert result["lifecycle_mapping"]["orders"] == "growth"
+
+    def test_graceful_fallback_without_python_docx(self, tmp_path: Path, monkeypatch):
+        """Returns empty DesignSpec when python-docx is not installed."""
+        import builtins
+        real_import = builtins.__import__
+
+        def mock_import(name, *args, **kwargs):
+            if name == "docx":
+                raise ImportError("no python-docx")
+            return real_import(name, *args, **kwargs)
+
+        # Create a real docx so the file exists
+        path = _build_docx(tmp_path)
+        monkeypatch.setattr(builtins, "__import__", mock_import)
+
+        spec = DesignSpecParser.parse_file(str(path))
+        assert not spec  # graceful empty spec
+
+
+# ============================================================
 # Integration – UnknownDatabaseProcessor with spec
 # ============================================================
 
@@ -672,3 +866,15 @@ class TestFileRoundTrip:
         spec = DesignSpecParser.parse_file(str(p))
         assert len(spec.tables) >= 5
         assert spec.tables.get("customers") is not None
+
+    @_SKIP_DOCX
+    def test_example_spec_docx_parseable(self):
+        """The shipped example_spec.docx must parse without errors."""
+        p = Path(__file__).parent.parent / "tasks" / "example_spec.docx"
+        if not p.exists():
+            pytest.skip("example_spec.docx not found")
+        spec = DesignSpecParser.parse_file(str(p))
+        assert len(spec.tables) >= 5
+        assert spec.tables.get("customers") is not None
+        assert spec.tables["customers"].domain == "user"
+        assert spec.tables["payments"].lifecycle == "growth"

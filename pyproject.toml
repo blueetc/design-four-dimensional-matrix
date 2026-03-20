@@ -24,6 +24,10 @@ viz = [
     "matplotlib>=3.5",
     "plotly>=5.0",
 ]
+# 设计说明书解析：Word (.docx) 支持
+spec = [
+    "python-docx>=1.1.0",
+]
 # seebook 集成新增依赖
 seebook = [
     "numpy>=1.24.0",
@@ -57,6 +61,7 @@ all = [
     "psycopg2-binary>=2.9.0",
     "pymysql>=1.1.0",
     "dash>=2.14.0",
+    "python-docx>=1.1.0",
 ]
 
 [project.scripts]

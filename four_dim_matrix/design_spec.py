@@ -5,9 +5,20 @@
 注入到动态分类器 (:class:`~four_dim_matrix.dynamic_classifier.UnknownDatabaseProcessor`)
 中，让矩阵生成过程"先知先觉"，显著提升分类准确性。
 
-支持三种输入格式
+支持四种输入格式
 ---------------
-1. **Markdown** (``.md``) — 最自然的设计说明书格式，适合人机共读::
+1. **Word** (``.docx``) — 最常见的企业文档格式，直接读取 Word 设计说明书::
+
+       标题 1 → 数据库名称
+       标题 2 → "tables" 分节标记
+       标题 3 → 单表名称
+       正文段落 / 项目符号 → domain:、lifecycle:、columns: 等属性
+       Word 表格 → 解析为列名或键值对
+
+   需要安装 ``python-docx`` (``pip install python-docx``)。
+   若未安装则静默回退，返回空的 :class:`DesignSpec`。
+
+2. **Markdown** (``.md``) — 最自然的设计说明书格式，适合人机共读::
 
        ## tables
 
@@ -18,7 +29,7 @@
        - columns: id, email, name, created_at
        - tags: core, auth
 
-2. **YAML** (``.yaml`` / ``.yml``) — 机器友好，适合 CI/CD 流程::
+3. **YAML** (``.yaml`` / ``.yml``) — 机器友好，适合 CI/CD 流程::
 
        database:
          name: ecommerce
@@ -30,7 +41,7 @@
            lifecycle: mature
            columns: [id, email, name]
 
-3. **Plain text** (``.txt`` 或其他) — 宽松格式，每行 ``key: value``，
+4. **Plain text** (``.txt`` 或其他) — 宽松格式，每行 ``key: value``，
    ``[table_name]`` 小节头::
 
        [users]
@@ -44,7 +55,12 @@
 
     from four_dim_matrix.design_spec import DesignSpecParser, DesignSpec
 
+    # 读取 Word 文档
+    spec = DesignSpecParser.parse_file("tasks/mydb_spec.docx")
+
+    # 读取 Markdown 文档（效果等同）
     spec = DesignSpecParser.parse_file("tasks/mydb_spec.md")
+
     print(spec.database_name)            # "ecommerce"
     print(spec.tables["users"].domain)   # "user"
     print(spec.tables["users"].columns)  # ["id", "email", "name", ...]
@@ -217,7 +233,7 @@ class DesignSpecParser:
         """从文件路径解析设计说明书。
 
         Parameters:
-            path: 文件路径（``.md``/``.yaml``/``.yml``/``.txt``）。
+            path: 文件路径（``.docx``/``.md``/``.yaml``/``.yml``/``.txt``）。
 
         Returns:
             解析完成的 :class:`DesignSpec` 对象。若文件不存在或无法读取，
@@ -228,12 +244,18 @@ class DesignSpecParser:
             不向调用方抛出异常（遵循 graceful-degradation 原则）。
         """
         p = Path(path)
+        suffix = p.suffix.lower()
+
+        # ── Word document ────────────────────────────────────────────────────
+        if suffix == ".docx":
+            return cls._parse_docx(p)
+
+        # ── Text-based formats ───────────────────────────────────────────────
         try:
             text = p.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError):
             return DesignSpec()
 
-        suffix = p.suffix.lower()
         if suffix in (".yaml", ".yml"):
             fmt = "yaml"
         elif suffix == ".md":
@@ -267,6 +289,172 @@ class DesignSpecParser:
             return cls._parse_text(text)
         except Exception:  # noqa: BLE001  – graceful degradation
             return DesignSpec(raw_text=text)
+
+    # -----------------------------------------------------------------------
+    # Word (.docx) parser
+    # -----------------------------------------------------------------------
+
+    @classmethod
+    def _parse_docx(cls, path: Path) -> DesignSpec:
+        """Parse a Word (``.docx``) database design document.
+
+        Requires ``python-docx`` (``pip install python-docx``).  When the
+        library is not installed the method returns an empty
+        :class:`DesignSpec` (graceful degradation).
+
+        Conversion strategy
+        -------------------
+        The Word document is first converted to an equivalent Markdown string
+        using :meth:`_extract_docx_to_markdown`, then parsed with the
+        existing :meth:`_parse_markdown` pipeline.
+
+        Heading mapping:
+
+        ===========================  ================
+        Word style                   Markdown output
+        ===========================  ================
+        Heading 1 (标题 1)            ``# …``
+        Heading 2 (标题 2)            ``## …``
+        Heading 3 (标题 3)            ``### …``
+        Normal paragraph             plain text
+        List paragraph / bullet      ``- …``
+        Word table                   ``- col1, col2 …`` *or* ``- key: value``
+        ===========================  ================
+
+        Parameters:
+            path: Absolute path to the ``.docx`` file.
+
+        Returns:
+            Parsed :class:`DesignSpec`, or empty :class:`DesignSpec` on
+            any error (missing library, corrupt file, etc.).
+        """
+        try:
+            import docx  # type: ignore[import]  # python-docx
+        except ImportError:
+            return DesignSpec()
+
+        try:
+            doc = docx.Document(str(path))
+        except Exception:  # noqa: BLE001
+            return DesignSpec()
+
+        md = cls._extract_docx_to_markdown(doc)
+        spec = cls._parse_markdown(md)
+        spec.raw_text = md
+        return spec
+
+    @staticmethod
+    def _extract_docx_to_markdown(doc: Any) -> str:  # doc: docx.Document
+        """Convert a ``python-docx`` Document object to a Markdown string.
+
+        The resulting Markdown is fed into the standard Markdown parser, so
+        the same table-extraction logic applies regardless of whether the
+        user supplied a ``.docx`` or a ``.md`` file.
+
+        Conversion rules:
+
+        * **Heading 1** → ``# text``
+        * **Heading 2** → ``## text``
+        * **Heading 3** → ``### text``
+        * **List Paragraph** (bulleted/numbered) → ``- text``
+        * **Normal paragraph** with ``key: value`` pattern → kept as-is
+          (will be picked up by kv parsing)
+        * **Word table** — each row is inspected:
+
+          * If the table looks like a two-column key/value table
+            (first cell matches a known property name), emit ``- key: value``
+            bullet lines.
+          * Otherwise, treat the first column as column names and emit a
+            ``- columns: col1, col2, …`` bullet.
+
+        Parameters:
+            doc: A ``docx.Document`` instance.
+
+        Returns:
+            Markdown string.
+        """
+        _KV_KEYS = frozenset({
+            "description", "domain", "lifecycle", "columns", "tags",
+            "foreign_keys", "foreign key", "notes",
+        })
+
+        lines: List[str] = []
+
+        for block in doc.element.body:
+            # ── paragraph ──────────────────────────────────────────────────
+            tag = block.tag.split("}")[-1] if "}" in block.tag else block.tag
+            if tag == "p":
+                # Re-wrap as a docx Paragraph to get style/text
+                try:
+                    import docx.text.paragraph as _dp  # type: ignore[import]
+                    para = _dp.Paragraph(block, doc)
+                except Exception:  # noqa: BLE001
+                    continue
+
+                text = para.text.strip()
+                if not text:
+                    lines.append("")
+                    continue
+
+                style_name = (para.style.name or "").lower() if para.style else ""
+
+                if "heading 1" in style_name:
+                    lines.append(f"# {text}")
+                elif "heading 2" in style_name:
+                    lines.append(f"## {text}")
+                elif "heading 3" in style_name:
+                    lines.append(f"### {text}")
+                elif "list" in style_name:
+                    # Ensure bullet format so _parse_markdown picks it up
+                    if not text.startswith("-"):
+                        lines.append(f"- {text}")
+                    else:
+                        lines.append(text)
+                else:
+                    # Plain paragraph: check if it looks like "key: value"
+                    lines.append(text)
+
+            # ── table ───────────────────────────────────────────────────────
+            elif tag == "tbl":
+                try:
+                    import docx.table as _dt  # type: ignore[import]
+                    table = _dt.Table(block, doc)
+                except Exception:  # noqa: BLE001
+                    continue
+
+                rows = table.rows
+                if not rows:
+                    continue
+
+                # Detect kv table: first column text matches a known key
+                first_cell_text = rows[0].cells[0].text.strip().lower()
+                is_kv = first_cell_text in _KV_KEYS
+
+                if is_kv:
+                    # Two-column kv table → emit "- key: value" bullets
+                    for row in rows:
+                        cells = row.cells
+                        if len(cells) >= 2:
+                            k = cells[0].text.strip().lower()
+                            v = cells[1].text.strip()
+                            if k:
+                                lines.append(f"- {k}: {v}")
+                else:
+                    # Header row = column names; or first column = table names
+                    header_cells = [c.text.strip() for c in rows[0].cells if c.text.strip()]
+                    if header_cells:
+                        # Emit as columns hint under current table context
+                        lines.append(f"- columns: {', '.join(header_cells)}")
+                    # Data rows: if they look like kv emit them too
+                    for row in rows[1:]:
+                        cells = row.cells
+                        if len(cells) >= 2:
+                            k = cells[0].text.strip().lower()
+                            v = cells[1].text.strip()
+                            if k in _KV_KEYS:
+                                lines.append(f"- {k}: {v}")
+
+        return "\n".join(lines)
 
     # -----------------------------------------------------------------------
     # Format detection

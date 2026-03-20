@@ -7,7 +7,10 @@
       --sqlite-path mydb.db -o outputs/      # 扫描 SQLite 数据库
   four-dim-matrix scan --db sqlite \\
       --sqlite-path mydb.db \\
-      --spec tasks/mydb_spec.md              # 先加载设计说明书再扫描
+      --spec tasks/mydb_spec.docx            # 先加载 Word 设计说明书再扫描
+  four-dim-matrix scan --db sqlite \\
+      --sqlite-path mydb.db \\
+      --spec tasks/mydb_spec.md              # 先加载 Markdown 设计说明书再扫描
   four-dim-matrix scan --db postgres \\
       --host localhost --user me --password x --database mydb
   four-dim-matrix visualize -i scan.json     # 从已有 JSON 启动可视化
@@ -652,7 +655,7 @@ def main() -> None:
     scan_parser.add_argument(
         "--spec", metavar="FILE",
         help=(
-            "数据库设计说明书文件路径 (.md / .yaml / .txt)。"
+            "数据库设计说明书文件路径 (.docx / .md / .yaml / .txt)。"
             "扫描前先解析该文件，将其中描述的业务域和生命周期注入到矩阵生成过程中，"
             "提升分类准确性。(参见 tasks/example_spec.md)"
         ),

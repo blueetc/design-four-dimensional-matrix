@@ -22,10 +22,12 @@ database:
 # Design specification (optional but recommended)
 # 数据库设计说明书（可选，提供后可显著提升业务域和生命周期分类准确性）
 spec:
-  # Path to the design spec file (.md / .yaml / .txt)
+  # Path to the design spec file (.docx / .md / .yaml / .txt)
   # Relative paths are resolved from this task file's directory.
-  # file: example_spec.md    # Markdown format
-  # file: example_spec.yaml  # YAML format
+  # Supported formats:
+  #   file: example_spec.docx  # Word document (requires: pip install python-docx)
+  #   file: example_spec.md    # Markdown format
+  #   file: example_spec.yaml  # YAML format
   file: ""
 
 output:
