@@ -366,22 +366,29 @@ def p50(arr):
 class UnknownDatabaseProcessor:
     """
     未知数据库处理器
-    
-    整合动态发现流程，处理完全未知的数据库
+
+    整合动态发现流程，处理完全未知的数据库。
+    可选接受 :class:`~four_dim_matrix.design_spec.DesignSpec` 先验知识，
+    当提供时，设计说明书中描述过的表将优先使用文档中指定的业务域和生命周期，
+    而不完全依赖启发式算法。
     """
     
     def __init__(self):
         self.domain_discoverer = DynamicDomainDiscoverer()
         self.lifecycle_classifier = AdaptiveLifecycleClassifier()
     
-    def process(self, 
-                table_metadata_list: List[Dict]) -> Dict[str, Any]:
+    def process(self,
+                table_metadata_list: List[Dict],
+                spec: Optional[Any] = None) -> Dict[str, Any]:
         """
         处理未知数据库的表元数据列表
-        
+
         Args:
             table_metadata_list: 从数据库扫描得到的原始元数据
-        
+            spec: 可选的 :class:`~four_dim_matrix.design_spec.DesignSpec`
+                先验知识对象。当提供时，设计文档中描述过的表将覆盖
+                纯启发式算法的域/生命周期分类结果。
+
         Returns:
             {
                 "signatures": [TableSignature],
@@ -391,6 +398,12 @@ class UnknownDatabaseProcessor:
                 "stats": {...}
             }
         """
+        # 0. 将设计说明书先验知识注入元数据（可选）
+        if spec is not None and spec:
+            # Work on a shallow copy to avoid mutating the caller's list
+            table_metadata_list = [dict(m) for m in table_metadata_list]
+            spec.apply_to_metadata(table_metadata_list)
+
         # 1. 转换为特征签名
         signatures = []
         for meta in table_metadata_list:
@@ -422,8 +435,14 @@ class UnknownDatabaseProcessor:
         
         # 3. 自适应生命周期分类
         lifecycle_mapping = self.lifecycle_classifier.classify(signatures)
-        
-        # 4. 统计信息
+
+        # 4. 用设计说明书覆盖启发式结果（精确度优先）
+        if spec is not None and spec:
+            domain_mapping, lifecycle_mapping = self._apply_spec_overrides(
+                spec, signatures, domain_mapping, lifecycle_mapping
+            )
+
+        # 5. 统计信息
         stats = {
             "total_tables": len(signatures),
             "total_columns": sum(s.column_count for s in signatures),
@@ -439,3 +458,63 @@ class UnknownDatabaseProcessor:
             "domains": self.domain_discoverer.domains,
             "stats": stats,
         }
+
+    # ------------------------------------------------------------------
+    # Spec override helpers
+    # ------------------------------------------------------------------
+
+    def _apply_spec_overrides(
+        self,
+        spec: Any,
+        signatures: List["TableSignature"],
+        domain_mapping: Dict[str, int],
+        lifecycle_mapping: Dict[str, str],
+    ) -> tuple:
+        """Replace heuristic results with spec-declared values where available.
+
+        For each table that has a ``domain`` declared in the spec:
+        * Look up (or create) a domain entry in ``self.domain_discoverer.domains``
+          whose name matches ``ts.domain``.
+        * Set that domain's z-index in ``domain_mapping`` for the table.
+
+        For each table with a ``lifecycle`` declared in the spec:
+        * Override ``lifecycle_mapping`` with the spec value.
+        """
+        # Build reverse map: domain_name → z_index (from existing domains)
+        name_to_z: Dict[str, int] = {
+            info["name"]: z
+            for z, info in self.domain_discoverer.domains.items()
+        }
+
+        for sig in signatures:
+            ts = spec.get_table(sig.table_name)
+            if ts is None:
+                continue
+
+            # Domain override
+            if ts.domain:
+                domain_name = ts.domain.lower()
+                if domain_name not in name_to_z:
+                    # Register a new domain derived from the spec
+                    new_z = self.domain_discoverer.domain_counter
+                    self.domain_discoverer.domain_counter += 1
+                    self.domain_discoverer.domains[new_z] = {
+                        "name": domain_name,
+                        "tables": [],
+                        "table_count": 0,
+                        "description": f"来自设计说明书: {ts.description}",
+                    }
+                    name_to_z[domain_name] = new_z
+                z = name_to_z[domain_name]
+                domain_mapping[sig.table_name] = z
+                # Keep the domain's table list up to date
+                d_info = self.domain_discoverer.domains[z]
+                if sig.table_name not in d_info["tables"]:
+                    d_info["tables"].append(sig.table_name)
+                    d_info["table_count"] = len(d_info["tables"])
+
+            # Lifecycle override
+            if ts.lifecycle:
+                lifecycle_mapping[sig.table_name] = ts.lifecycle.lower()
+
+        return domain_mapping, lifecycle_mapping

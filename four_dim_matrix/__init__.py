@@ -99,6 +99,7 @@ from .changelog import ChangeTracker, CellChange, VersionSnapshot, ChangeType
 from .optimizer import MatrixOptimizer, OptimizationSuggestion
 from .demo import build_hypercube_from_adapter
 from .memory import MemoryStore, SessionRecord
+from .design_spec import DesignSpec, TableSpec, DesignSpecParser
 
 __all__ = [
     # Core dual-matrix (original)
@@ -195,4 +196,8 @@ __all__ = [
     # Memory: persistent session & preference store
     "MemoryStore",
     "SessionRecord",
+    # Design spec: text-based database specification parser
+    "DesignSpec",
+    "TableSpec",
+    "DesignSpecParser",
 ]

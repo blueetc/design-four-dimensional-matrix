@@ -1,0 +1,112 @@
+# four-dim-matrix Database Design Specification (YAML format)
+# 数据库设计说明书 – YAML 格式示例
+#
+# 用法 (Usage):
+#   four-dim-matrix scan --db sqlite --sqlite-path mydb.db --spec tasks/example_spec.yaml
+# 或在任务文件中引用 (or reference from a task YAML):
+#   spec:
+#     file: tasks/example_spec.yaml
+
+database:
+  name: ecommerce
+  description: 电商平台核心业务数据库
+
+tables:
+  customers:
+    description: 注册用户和会员账号信息
+    domain: user
+    lifecycle: mature
+    columns: [id, name, email, phone, signup_date, loyalty_tier]
+    tags: [core, pii]
+
+  users:
+    description: 系统登录账号
+    domain: user
+    lifecycle: mature
+    columns: [id, customer_id, username, password_hash, last_login]
+    tags: [auth, pii]
+
+  products:
+    description: 商品目录
+    domain: product
+    lifecycle: mature
+    columns: [id, sku, name, price, stock, category_id, active]
+    tags: [catalog]
+    foreign_keys:
+      - column: category_id
+        ref_table: categories
+        ref_column: id
+
+  categories:
+    description: 商品分类层级
+    domain: product
+    lifecycle: mature
+    columns: [id, name, parent_id, description]
+    tags: [catalog]
+
+  orders:
+    description: 购买订单主表
+    domain: revenue
+    lifecycle: mature
+    columns: [id, customer_id, status, total, created_at, shipped_at]
+    tags: [transaction]
+    foreign_keys:
+      - column: customer_id
+        ref_table: customers
+        ref_column: id
+
+  order_items:
+    description: 订单明细行
+    domain: revenue
+    lifecycle: mature
+    columns: [id, order_id, product_id, quantity, unit_price]
+    tags: [transaction]
+    foreign_keys:
+      - column: order_id
+        ref_table: orders
+        ref_column: id
+      - column: product_id
+        ref_table: products
+        ref_column: id
+
+  payments:
+    description: 支付记录
+    domain: revenue
+    lifecycle: growth
+    columns: [id, order_id, amount, method, status, paid_at]
+    tags: [transaction, finance]
+
+  campaigns:
+    description: 营销活动
+    domain: marketing
+    lifecycle: growth
+    columns: [id, name, type, starts_at, ends_at, budget, status]
+    tags: [promotion]
+
+  promotions:
+    description: 优惠券和折扣码
+    domain: marketing
+    lifecycle: mature
+    columns: [id, code, discount_pct, starts_at, ends_at, usage_count]
+    tags: [promotion]
+
+  inventory_log:
+    description: 库存变动日志
+    domain: operations
+    lifecycle: mature
+    columns: [id, product_id, change_qty, reason, logged_at]
+    tags: [audit, log]
+
+  audit_log:
+    description: 系统操作审计日志
+    domain: operations
+    lifecycle: legacy
+    columns: [id, user_id, action, target_type, target_id, created_at]
+    tags: [audit, log]
+
+  config:
+    description: 系统配置项
+    domain: operations
+    lifecycle: legacy
+    columns: [id, key, value, updated_at]
+    tags: [config]

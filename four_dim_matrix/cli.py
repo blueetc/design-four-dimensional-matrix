@@ -5,6 +5,9 @@
   four-dim-matrix demo                       # 运行双矩阵演示，生成 HTML
   four-dim-matrix scan --db sqlite \\
       --sqlite-path mydb.db -o outputs/      # 扫描 SQLite 数据库
+  four-dim-matrix scan --db sqlite \\
+      --sqlite-path mydb.db \\
+      --spec tasks/mydb_spec.md              # 先加载设计说明书再扫描
   four-dim-matrix scan --db postgres \\
       --host localhost --user me --password x --database mydb
   four-dim-matrix visualize -i scan.json     # 从已有 JSON 启动可视化
@@ -31,11 +34,27 @@ from four_dim_matrix.dynamic_classifier import UnknownDatabaseProcessor
 from four_dim_matrix.demo import build_hypercube_from_adapter
 from four_dim_matrix.db_adapter import DatabaseAdapter
 from four_dim_matrix.memory import MemoryStore
+from four_dim_matrix.design_spec import DesignSpecParser, DesignSpec
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+def _load_spec(spec_path: Optional[str]) -> Optional[DesignSpec]:
+    """Load a design spec from *spec_path*; return ``None`` if not provided.
+
+    Prints a brief summary to stdout so the user knows the spec was picked up.
+    """
+    if not spec_path:
+        return None
+    spec = DesignSpecParser.parse_file(spec_path)
+    if not spec:
+        print(f"⚠️  设计说明书文件为空或无法解析: {spec_path}")
+        return None
+    print(f"\n📋 已加载数据库设计说明书: {spec_path}")
+    print(f"   {spec.summary()}")
+    return spec
 
 def _get_connector(db_type: str, conn_params: dict):
     """Lazily import and return the appropriate database connector."""
@@ -139,6 +158,11 @@ def scan_database(args) -> HyperCube:
     store = MemoryStore()
 
     # ----------------------------------------------------------------
+    # Load optional design spec (prior knowledge)
+    # ----------------------------------------------------------------
+    spec = _load_spec(getattr(args, "spec", None))
+
+    # ----------------------------------------------------------------
     # SQLite path – uses the lightweight DatabaseAdapter directly
     # ----------------------------------------------------------------
     if args.db == "sqlite":
@@ -149,7 +173,7 @@ def scan_database(args) -> HyperCube:
         print(f"🔍 正在打开 SQLite 数据库: {db_path}")
         adapter = DatabaseAdapter.from_sqlite(db_path)
         print(f"   发现 {len(adapter.tables)} 张表")
-        hypercube = build_hypercube_from_adapter(adapter, db_path)
+        hypercube = build_hypercube_from_adapter(adapter, db_path, spec=spec)
         _print_hypercube_summary(hypercube)
 
         out_path = _resolve_output_path(getattr(args, "output", None))
@@ -205,7 +229,7 @@ def scan_database(args) -> HyperCube:
 
     print("   正在动态发现业务域…")
     processor = UnknownDatabaseProcessor()
-    result = processor.process(raw_metadata)
+    result = processor.process(raw_metadata, spec=spec)
 
     stats = result["stats"]
     print(f"\n📊 动态分析结果:")
@@ -470,6 +494,7 @@ def run_task(args) -> None:
     viz_cfg = cfg.get("visualization") or {}
     mem_cfg = cfg.get("memory") or {}
     task_meta = cfg.get("task") or {}
+    spec_cfg = cfg.get("spec") or {}
 
     db_type = db_cfg.get("type", "sqlite")
     label = mem_cfg.get("label") or task_meta.get("name", "")
@@ -491,6 +516,13 @@ def run_task(args) -> None:
     a.database = db_cfg.get("database", "") or ""
     a.schema = db_cfg.get("schema")
 
+    # Design spec: resolve relative paths against the task file's directory
+    spec_file = spec_cfg.get("file") or spec_cfg.get("path") or ""
+    if spec_file:
+        task_dir = Path(task_file).parent
+        spec_file = str(task_dir / spec_file) if not Path(spec_file).is_absolute() else spec_file
+    a.spec = spec_file or None
+
     out_dir = out_cfg.get("dir", "./outputs")
     a.output = out_dir.rstrip("/") + "/"  # trigger directory resolution
     a.visualize = bool(viz_cfg.get("serve", False))
@@ -500,6 +532,8 @@ def run_task(args) -> None:
     print(f"   任务名称 : {task_meta.get('name', '—')}")
     print(f"   数据库   : {db_type}  ({a.sqlite_path or a.database})")
     print(f"   输出目录 : {out_dir}")
+    if spec_file:
+        print(f"   设计说明 : {spec_file}")
 
     scan_database(a)
 
@@ -615,6 +649,14 @@ def main() -> None:
     scan_parser.add_argument("--password", default="", help="数据库密码")
     scan_parser.add_argument("--database", help="数据库名")
     scan_parser.add_argument("--schema", help="Schema 名称")
+    scan_parser.add_argument(
+        "--spec", metavar="FILE",
+        help=(
+            "数据库设计说明书文件路径 (.md / .yaml / .txt)。"
+            "扫描前先解析该文件，将其中描述的业务域和生命周期注入到矩阵生成过程中，"
+            "提升分类准确性。(参见 tasks/example_spec.md)"
+        ),
+    )
     scan_parser.add_argument(
         "--output", "-o",
         help="输出路径：文件名 (如 scan.json) 或目录 (如 ./outputs/)",

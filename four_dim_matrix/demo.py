@@ -95,6 +95,7 @@ def _compress_rows(row_count: int, max_rows: int) -> float:
 def build_hypercube_from_adapter(
     adapter: DatabaseAdapter,
     db_label: str = "database",
+    spec: Optional[Any] = None,
 ) -> HyperCube:
     """Convert a :class:`~four_dim_matrix.DatabaseAdapter` into a :class:`~four_dim_matrix.hypercube.HyperCube`.
 
@@ -119,6 +120,10 @@ def build_hypercube_from_adapter(
             :meth:`~four_dim_matrix.DatabaseAdapter.from_connection`).
         db_label: Human-readable name for the database (used in cell metadata
             and visualisation titles).
+        spec: Optional :class:`~four_dim_matrix.design_spec.DesignSpec`
+            prior-knowledge object.  When provided, domain and lifecycle
+            values declared in the design document take precedence over the
+            built-in keyword heuristics for matching table names.
 
     Returns:
         A fully populated :class:`~four_dim_matrix.hypercube.HyperCube` with
@@ -133,8 +138,29 @@ def build_hypercube_from_adapter(
     snapshot_t = adapter.snapshot_time
 
     for table in tables:
-        z_id, domain_name = _classify_domain(table.name)
-        stage, x_val = _classify_lifecycle(table.column_count)
+        # Use spec prior knowledge when available; fall back to heuristics
+        if spec is not None:
+            ts = spec.get_table(table.name)
+        else:
+            ts = None
+
+        if ts is not None and ts.domain:
+            # Spec-driven: look up z_id by domain name or generate a new one
+            domain_name = ts.domain
+            # Simple stable hash: position of domain in spec.tables ordering
+            all_domains = list({
+                t2.domain for t2 in spec.tables.values() if t2.domain
+            })
+            z_id = all_domains.index(domain_name) if domain_name in all_domains else 0
+        else:
+            z_id, domain_name = _classify_domain(table.name)
+
+        if ts is not None and ts.lifecycle:
+            stage = ts.lifecycle.lower()
+            x_val = _STAGE_TO_X.get(stage, 50)
+        else:
+            stage, x_val = _classify_lifecycle(table.column_count)
+
         y_val = _compress_rows(table.row_count, max_rows)
 
         cell = DataCell(
@@ -149,7 +175,7 @@ def build_hypercube_from_adapter(
             size_bytes=table.row_count * 100,
             business_domain=domain_name,
             lifecycle_stage=stage,
-            tags=[db_label],
+            tags=[db_label] + (ts.tags if ts else []),
             payload=table.to_dict(),
         )
         hypercube.add_cell(cell, compute_color=True)
