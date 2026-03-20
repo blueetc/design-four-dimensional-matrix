@@ -41,3 +41,7 @@ tasks/*.log
 # User-specific memory store (lives in ~/.four_dim_matrix/, not here)
 # Uncomment to also ignore any local memory files dropped in project root:
 # memory.json
+
+# Temporary SQLite databases created by tests/demos
+*.db
+sqlite
