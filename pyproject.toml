@@ -25,5 +25,5 @@ ollama-exec = "client.cli:main"
 package-dir = {"" = "."}
 
 [tool.setuptools.packages.find]
-where = ["."!!!!!!!!
+where = ["." ]
 include = ["agent*", "toolserver*", "client*"]
