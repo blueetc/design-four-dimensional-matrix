@@ -13,6 +13,7 @@ from pydantic import BaseModel
 from .audit import append_audit
 from .config import load_policy
 from .db import SQLiteDB
+from .field_analyzer import analyze_database as _analyze_db
 from .files import read_file as _read
 from .files import write_file as _write
 from .policy import (
@@ -22,6 +23,8 @@ from .policy import (
     enforce_workspace,
 )
 from .shell import run_command as _run
+from .visualizer import save_3d_html
+from .wide_table import create_wide_table, design_wide_table, incremental_etl
 
 _POLICY_PATH = os.path.join(os.path.dirname(__file__), "..", "config", "policy.yaml")
 POLICY = load_policy(_POLICY_PATH)
@@ -54,6 +57,27 @@ class WriteFileIn(BaseModel):
 class SQLIn(BaseModel):
     sql: str
     params: list | None = None
+
+
+class AnalyzeFieldsIn(BaseModel):
+    sample_size: int = 200
+
+
+class DesignWideTableIn(BaseModel):
+    analysis: list | None = None  # If None, run analyze first
+
+
+class EtlIn(BaseModel):
+    design: dict | None = None  # If None, auto-design first
+    batch_size: int = 500
+
+
+class Visualize3dIn(BaseModel):
+    time_col: str | None = None
+    measure_col: str | None = None
+    theme_col: str | None = None
+    title: str = "Wide Table – 3D Business Space"
+    limit: int = 5000
 
 
 # ---------------------------------------------------------------------------
@@ -264,3 +288,149 @@ def db_exec(inp: SQLIn) -> dict:
         "result": {"rowcount": res.get("rowcount")},
     })
     return _ok("db_exec", res)
+
+
+# ---------------------------------------------------------------------------
+# Wide-table pipeline endpoints
+# ---------------------------------------------------------------------------
+
+# Module-level cache for the latest wide-table design so the agent can call
+# tools step-by-step without re-passing the design dict every time.
+_LAST_ANALYSIS: list | None = None
+_LAST_DESIGN: dict | None = None
+
+
+@app.post("/tool/analyze_fields")
+def analyze_fields(inp: AnalyzeFieldsIn | None = None) -> dict:
+    """Sample all tables in the database and infer field semantics."""
+    global _LAST_ANALYSIS  # noqa: PLW0603
+    sample_size = inp.sample_size if inp else 200
+    try:
+        conn = DB.connect()
+        result = _analyze_db(conn, sample_size=sample_size)
+        _LAST_ANALYSIS = result
+    except Exception as exc:
+        err = str(exc)
+        append_audit(AUDIT_LOG, {"tool": "analyze_fields", "args": {"sample_size": sample_size}, "ok": False, "error": err})
+        return _fail("analyze_fields", err)
+    append_audit(AUDIT_LOG, {
+        "tool": "analyze_fields",
+        "args": {"sample_size": sample_size},
+        "ok": True,
+        "result": {"tables": len(result)},
+    })
+    return _ok("analyze_fields", result)
+
+
+@app.post("/tool/design_wide_table")
+def design_wide_table_endpoint(inp: DesignWideTableIn | None = None) -> dict:
+    """Design a wide table schema from field analysis."""
+    global _LAST_DESIGN  # noqa: PLW0603
+    analysis = (inp.analysis if inp and inp.analysis else None) or _LAST_ANALYSIS
+    if not analysis:
+        return _fail("design_wide_table", "No analysis data. Call analyze_fields first.")
+    try:
+        result = design_wide_table(analysis)
+        _LAST_DESIGN = result
+    except Exception as exc:
+        err = str(exc)
+        append_audit(AUDIT_LOG, {"tool": "design_wide_table", "args": {}, "ok": False, "error": err})
+        return _fail("design_wide_table", err)
+    append_audit(AUDIT_LOG, {
+        "tool": "design_wide_table",
+        "args": {},
+        "ok": True,
+        "result": {
+            "columns": len(result.get("columns", [])),
+            "time_column": result.get("time_column"),
+        },
+    })
+    return _ok("design_wide_table", result)
+
+
+@app.post("/tool/create_wide_table")
+def create_wide_table_endpoint() -> dict:
+    """Create the wide table in the database using the latest design."""
+    design = _LAST_DESIGN
+    if not design:
+        return _fail("create_wide_table", "No design. Call design_wide_table first.")
+    try:
+        conn = DB.connect()
+        ddl = create_wide_table(conn, design)
+    except Exception as exc:
+        err = str(exc)
+        append_audit(AUDIT_LOG, {"tool": "create_wide_table", "args": {}, "ok": False, "error": err})
+        return _fail("create_wide_table", err)
+    append_audit(AUDIT_LOG, {"tool": "create_wide_table", "args": {}, "ok": True})
+    return _ok("create_wide_table", {"ddl": ddl})
+
+
+@app.post("/tool/etl_to_wide_table")
+def etl_to_wide_table(inp: EtlIn | None = None) -> dict:
+    """Incrementally load new rows from source tables into the wide table."""
+    design = (inp.design if inp and inp.design else None) or _LAST_DESIGN
+    if not design:
+        return _fail("etl_to_wide_table", "No design. Call design_wide_table first.")
+    batch_size = inp.batch_size if inp else 500
+    try:
+        conn = DB.connect()
+        result = incremental_etl(conn, design, batch_size=batch_size)
+    except Exception as exc:
+        err = str(exc)
+        append_audit(AUDIT_LOG, {"tool": "etl_to_wide_table", "args": {"batch_size": batch_size}, "ok": False, "error": err})
+        return _fail("etl_to_wide_table", err)
+    append_audit(AUDIT_LOG, {
+        "tool": "etl_to_wide_table",
+        "args": {"batch_size": batch_size},
+        "ok": True,
+        "result": result,
+    })
+    return _ok("etl_to_wide_table", result)
+
+
+@app.post("/tool/visualize_3d")
+def visualize_3d(inp: Visualize3dIn | None = None) -> dict:
+    """Generate an interactive 3-D scatter HTML from the wide table."""
+    design = _LAST_DESIGN
+    if not design:
+        return _fail("visualize_3d", "No design. Run the pipeline first.")
+
+    time_col = (inp.time_col if inp and inp.time_col else None) or design.get("time_column", "")
+    if not time_col:
+        return _fail("visualize_3d", "No time column identified. Specify time_col.")
+
+    measure_cols = design.get("measure_columns", [])
+    measure_col = (inp.measure_col if inp and inp.measure_col else None) or (measure_cols[0] if measure_cols else "")
+    if not measure_col:
+        return _fail("visualize_3d", "No measure column identified. Specify measure_col.")
+
+    dim_cols = design.get("dimension_columns", [])
+    theme_col = (inp.theme_col if inp and inp.theme_col else None) or (dim_cols[0] if dim_cols else "")
+    if not theme_col:
+        return _fail("visualize_3d", "No dimension column for themes. Specify theme_col.")
+
+    title = inp.title if inp else "Wide Table – 3D Business Space"
+    limit = inp.limit if inp else 5000
+    out_path = os.path.join(POLICY["workspace_root"], "wide_table_3d.html")
+
+    try:
+        conn = DB.connect()
+        from .wide_table import WIDE_TABLE_NAME
+        saved = save_3d_html(conn, WIDE_TABLE_NAME, time_col, measure_col, theme_col, out_path, title=title, limit=limit)
+    except Exception as exc:
+        err = str(exc)
+        append_audit(AUDIT_LOG, {"tool": "visualize_3d", "args": {"time_col": time_col}, "ok": False, "error": err})
+        return _fail("visualize_3d", err)
+
+    append_audit(AUDIT_LOG, {
+        "tool": "visualize_3d",
+        "args": {"time_col": time_col, "measure_col": measure_col, "theme_col": theme_col},
+        "ok": True,
+        "result": {"path": saved},
+    })
+    return _ok("visualize_3d", {
+        "path": saved,
+        "time_col": time_col,
+        "measure_col": measure_col,
+        "theme_col": theme_col,
+    })

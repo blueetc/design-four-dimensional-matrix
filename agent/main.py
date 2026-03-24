@@ -41,6 +41,12 @@ TOOLS = {
     "db_schema": "/tool/db_schema",
     "db_query": "/tool/db_query",
     "db_exec": "/tool/db_exec",
+    # Wide-table pipeline
+    "analyze_fields": "/tool/analyze_fields",
+    "design_wide_table": "/tool/design_wide_table",
+    "create_wide_table": "/tool/create_wide_table",
+    "etl_to_wide_table": "/tool/etl_to_wide_table",
+    "visualize_3d": "/tool/visualize_3d",
 }
 
 MAX_ITERATIONS = 50

@@ -54,7 +54,31 @@ SYSTEM_PROMPT = """\
 ## 可用工具
 
 get_system_info, run_command, read_file, write_file, list_dir, stat, \
-db_schema, db_query, db_exec
+db_schema, db_query, db_exec, analyze_fields, design_wide_table, \
+create_wide_table, etl_to_wide_table, visualize_3d
+
+## 宽表分析流水线（Wide Table Pipeline）
+
+当用户需要分析数据库并生成可视化时，按以下步骤执行：
+
+1. **analyze_fields** — 采样所有表，推断字段语义角色（时间/维度/度量/标识符/文本）。
+   - 即使没有字段备注也能通过实际值学习字段含义。
+   - 参数：{"sample_size": 200}（可选）
+
+2. **design_wide_table** — 基于分析结果设计宽表 schema，将多表扁平化为一张分析表。
+   - 自动识别时间列(x轴)、度量列(y轴)、维度列(z轴/主题)。
+   - 参数：{"analysis": [...]}（可选，默认用上一步结果）
+
+3. **create_wide_table** — 在数据库中创建宽表（CREATE TABLE IF NOT EXISTS）。
+   - 无需参数，使用上一步设计结果。
+
+4. **etl_to_wide_table** — 增量加载源表新数据到宽表。
+   - 使用 rowid 水位线跟踪，只加载新行。
+   - 参数：{"batch_size": 500}（可选）
+
+5. **visualize_3d** — 生成交互式 3D 散点图 HTML（x=时间, y=业务量, z=主题）。
+   - 鼠标悬停显示宽表记录详情。
+   - 参数：{"time_col": "...", "measure_col": "...", "theme_col": "..."}（可选，默认自动选取）
 """
 
 DEV_PROMPT = """\
