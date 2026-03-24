@@ -5,6 +5,7 @@ from __future__ import annotations
 import getpass
 import os
 import platform
+import shutil
 
 from fastapi import FastAPI
 from pydantic import BaseModel
@@ -14,7 +15,12 @@ from .config import load_policy
 from .db import SQLiteDB
 from .files import read_file as _read
 from .files import write_file as _write
-from .policy import check_command, enforce_workspace
+from .policy import (
+    check_command,
+    check_sensitive_path,
+    check_sql_write,
+    enforce_workspace,
+)
 from .shell import run_command as _run
 
 _POLICY_PATH = os.path.join(os.path.dirname(__file__), "..", "config", "policy.yaml")
@@ -51,7 +57,7 @@ class SQLIn(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Helper
+# Helpers
 # ---------------------------------------------------------------------------
 
 def _ok(tool: str, result: object) -> dict:
@@ -70,11 +76,32 @@ def _fail(tool: str, error: str) -> dict:
 def get_system_info() -> dict:
     res = {
         "platform": platform.platform(),
+        "system": platform.system(),
+        "release": platform.release(),
+        "machine": platform.machine(),
         "workspace_root": POLICY["workspace_root"],
         "user": getpass.getuser(),
+        "shell": _detect_shell(),
+        "disk_free": _disk_free(POLICY["workspace_root"]),
     }
     append_audit(AUDIT_LOG, {"tool": "get_system_info", "args": {}, "ok": True})
     return _ok("get_system_info", res)
+
+
+def _detect_shell() -> str:
+    """Return the preferred shell for the current platform."""
+    if platform.system().lower() == "windows":
+        return "pwsh" if shutil.which("pwsh") else "powershell"
+    return os.environ.get("SHELL", "/bin/bash")
+
+
+def _disk_free(path: str) -> dict | None:
+    """Return disk usage stats (total/used/free in bytes) or ``None``."""
+    try:
+        usage = shutil.disk_usage(path)
+        return {"total": usage.total, "used": usage.used, "free": usage.free}
+    except OSError:
+        return None
 
 
 @app.post("/tool/run_command")
@@ -111,7 +138,12 @@ def read_file(inp: PathIn) -> dict:
     if not ok:
         append_audit(AUDIT_LOG, {"tool": "read_file", "args": inp.model_dump(), "ok": False, "error": msg})
         return _fail("read_file", msg)
-    res = _read(abs_path)
+    try:
+        res = _read(abs_path)
+    except OSError as exc:
+        err = str(exc)
+        append_audit(AUDIT_LOG, {"tool": "read_file", "args": {"path": abs_path}, "ok": False, "error": err})
+        return _fail("read_file", err)
     append_audit(AUDIT_LOG, {"tool": "read_file", "args": {"path": abs_path}, "ok": True})
     return _ok("read_file", res)
 
@@ -123,6 +155,12 @@ def write_file(inp: WriteFileIn) -> dict:
         append_audit(AUDIT_LOG, {"tool": "write_file", "args": inp.model_dump(), "ok": False, "error": msg})
         return _fail("write_file", msg)
 
+    # Block writes to sensitive system directories
+    ok, msg = check_sensitive_path(POLICY, abs_path)
+    if not ok:
+        append_audit(AUDIT_LOG, {"tool": "write_file", "args": {"path": abs_path}, "ok": False, "error": msg})
+        return _fail("write_file", msg)
+
     ext = os.path.splitext(abs_path)[1].lower()
     allowed_exts = set(POLICY["files"]["allow_write_extensions"])
     if ext and ext not in allowed_exts:
@@ -130,8 +168,19 @@ def write_file(inp: WriteFileIn) -> dict:
         append_audit(AUDIT_LOG, {"tool": "write_file", "args": {"path": abs_path}, "ok": False, "error": err})
         return _fail("write_file", err)
 
-    res = _write(abs_path, inp.content, backup=inp.backup, max_bytes=POLICY["files"]["max_write_bytes"])
-    append_audit(AUDIT_LOG, {"tool": "write_file", "args": {"path": abs_path, "backup": inp.backup}, "ok": True})
+    try:
+        res = _write(abs_path, inp.content, backup=inp.backup, max_bytes=POLICY["files"]["max_write_bytes"])
+    except (ValueError, OSError) as exc:
+        err = str(exc)
+        append_audit(AUDIT_LOG, {"tool": "write_file", "args": {"path": abs_path}, "ok": False, "error": err})
+        return _fail("write_file", err)
+
+    append_audit(AUDIT_LOG, {
+        "tool": "write_file",
+        "args": {"path": abs_path, "backup": inp.backup},
+        "ok": True,
+        "result": {"skipped": res.get("skipped", False)},
+    })
     return _ok("write_file", res)
 
 
@@ -177,14 +226,37 @@ def db_schema() -> dict:
 
 @app.post("/tool/db_query")
 def db_query(inp: SQLIn) -> dict:
-    res = DB.query(inp.sql, inp.params)
+    try:
+        res = DB.query(inp.sql, inp.params)
+    except Exception as exc:
+        err = str(exc)
+        append_audit(AUDIT_LOG, {"tool": "db_query", "args": {"sql": inp.sql}, "ok": False, "error": err})
+        return _fail("db_query", err)
     append_audit(AUDIT_LOG, {"tool": "db_query", "args": {"sql": inp.sql}, "ok": True})
     return _ok("db_query", res)
 
 
 @app.post("/tool/db_exec")
 def db_exec(inp: SQLIn) -> dict:
-    res = DB.exec(inp.sql, inp.params, force_transaction=POLICY["db"]["force_transaction"])
+    # --- SQL policy check ---
+    ok, msg = check_sql_write(POLICY, inp.sql)
+    if not ok:
+        append_audit(AUDIT_LOG, {"tool": "db_exec", "args": {"sql": inp.sql}, "ok": False, "error": msg})
+        return _fail("db_exec", msg)
+
+    row_limit = POLICY.get("db", {}).get("write_row_limit")
+    try:
+        res = DB.exec(
+            inp.sql,
+            inp.params,
+            force_transaction=POLICY["db"]["force_transaction"],
+            row_limit=row_limit,
+        )
+    except (ValueError, Exception) as exc:
+        err = str(exc)
+        append_audit(AUDIT_LOG, {"tool": "db_exec", "args": {"sql": inp.sql}, "ok": False, "error": err})
+        return _fail("db_exec", err)
+
     append_audit(AUDIT_LOG, {
         "tool": "db_exec",
         "args": {"sql": inp.sql},

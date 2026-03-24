@@ -64,7 +64,7 @@ python -m agent.main "列出workspace目录内容"
 │   ├── server.py          # FastAPI tool endpoints
 │   ├── policy.py          # Security policy enforcement
 │   ├── shell.py           # Cross-platform command execution
-│   ├── files.py           # File read/write with backup
+│   ├── files.py           # File read/write with backup + idempotency
 │   ├── db.py              # SQLite (extensible to PG/MySQL/MSSQL)
 │   ├── audit.py           # JSONL audit logger
 │   └── config.py          # YAML config loader
@@ -79,28 +79,52 @@ python -m agent.main "列出workspace目录内容"
 
 | Tool | Endpoint | Description |
 |------|----------|-------------|
-| `get_system_info` | `POST /tool/get_system_info` | OS, user, workspace info |
+| `get_system_info` | `POST /tool/get_system_info` | OS, shell, user, workspace, disk info |
 | `run_command` | `POST /tool/run_command` | Execute shell commands (allow-listed) |
 | `read_file` | `POST /tool/read_file` | Read a file inside workspace |
-| `write_file` | `POST /tool/write_file` | Write a file (with auto-backup) |
+| `write_file` | `POST /tool/write_file` | Write a file (with auto-backup + idempotency) |
 | `list_dir` | `POST /tool/list_dir` | List directory contents |
 | `stat` | `POST /tool/stat` | File/directory metadata |
 | `db_schema` | `POST /tool/db_schema` | Show database schema |
 | `db_query` | `POST /tool/db_query` | Run a read-only SQL query |
-| `db_exec` | `POST /tool/db_exec` | Execute a write SQL statement |
+| `db_exec` | `POST /tool/db_exec` | Execute a write SQL statement (policy-checked) |
 
 ## Security Model
 
 All tool calls pass through the **Policy Engine** (`toolserver/policy.py`)
 before execution:
 
-* **Command allowlist** — per-OS list of permitted executables
+### Command Execution (`run_command`)
+
+* **Command allowlist** — per-OS list of permitted executables (Linux, macOS,
+  Windows each have separate lists)
 * **Deny patterns** — regex patterns that block dangerous commands
-  (`rm -rf /`, `mkfs`, `diskpart`, `shutdown`, …)
-* **Workspace sandbox** — file operations are restricted to `workspace_root`
+  (`rm -r*`, `mkfs`, `diskpart`, `shutdown`, `passwd`, `visudo`, firewall
+  changes, …)
+* **Workspace sandbox** — `cwd` is restricted to `workspace_root`
+* **Execution limits** — per-command timeout and max output size
+
+### File Operations (`write_file`)
+
+* **Workspace sandbox** — only files inside `workspace_root` may be written
+* **Sensitive-path blocklist** — writes to system directories (`/etc`,
+  `/boot`, `C:\Windows`, …) are always blocked
 * **File-extension allowlist** — only approved extensions may be written
-* **Execution limits** — command timeout and max output size
-* **Database safeguards** — forced transactions, row-count limits
+* **Auto-backup** — existing files are backed up to `.bak` before overwrite
+* **Idempotency** — if the content is unchanged the write is skipped
+
+### Database Operations (`db_exec`)
+
+* **SQL deny patterns** — `DROP DATABASE`, `TRUNCATE`, `ALTER USER`,
+  `GRANT`, `REVOKE` are blocked
+* **Forced WHERE clause** — `UPDATE` and `DELETE` without `WHERE` are rejected
+* **Row-count estimation** — before executing an `UPDATE`/`DELETE`, the tool
+  server estimates the affected rows; if the count exceeds
+  `db.write_row_limit` the statement is rejected
+* **Forced transactions** — every write runs inside `BEGIN` / `COMMIT` with
+  automatic `ROLLBACK` on failure
+
+### Audit
 
 Every tool invocation is recorded in an append-only **JSONL audit log** at
 `<workspace_root>/audit.jsonl`.
@@ -109,8 +133,18 @@ Every tool invocation is recorded in an append-only **JSONL audit log** at
 
 ### `config/policy.yaml`
 
-Controls all security boundaries — workspace root, command allowlists, deny
-patterns, file extension limits, database transaction policy, and more.
+Controls all security boundaries:
+
+| Section | Purpose |
+|---------|---------|
+| `workspace_root` | Root directory for all file operations |
+| `allowlist` | Per-OS command executable allowlists |
+| `deny_patterns` | Regex patterns blocking dangerous commands |
+| `sensitive_paths` | System directories where writes are always blocked |
+| `files` | Extension allowlist, max write size |
+| `db` | Transaction policy, row-count limit, SQL deny patterns |
+| `max_exec_seconds` | Per-command timeout |
+| `max_output_bytes` | Max captured output per command |
 
 ### `config/databases.yaml`
 
@@ -121,7 +155,8 @@ and SQL Server examples are included as comments.
 
 The `toolserver/db.py` module currently implements SQLite. To add another
 backend, create a class that exposes the same interface (`schema()`, `query()`,
-`exec()`) and register it in `server.py`. Recommended drivers:
+`exec()`, `estimate_affected_rows()`) and register it in `server.py`.
+Recommended drivers:
 
 | Database | Driver |
 |----------|--------|
