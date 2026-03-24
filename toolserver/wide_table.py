@@ -1,7 +1,7 @@
 """Design a wide (denormalized) table from field analysis and perform incremental ETL.
 
 The wide table flattens multiple source tables into a single analytical view,
-making it easy to drive the 3-D visualisation (x = time, y = measure, z = theme).
+making it easy to drive the 3-D visualization (x = time, y = measure, z = theme).
 """
 
 from __future__ import annotations

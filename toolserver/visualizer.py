@@ -1,4 +1,4 @@
-"""Generate an interactive 3-D visualisation from the wide table.
+"""Generate an interactive 3-D visualization from the wide table.
 
 Axes:
 - **X** – time (the selected time column)
@@ -32,7 +32,7 @@ def _query_wide_data(
     theme_col: str,
     limit: int = 5000,
 ) -> list[dict[str, Any]]:
-    """Fetch rows from the wide table for visualisation."""
+    """Fetch rows from the wide table for visualization."""
     cur = conn.execute(  # noqa: S608
         f"SELECT * FROM [{wide_table}] "
         f"WHERE [{time_col}] IS NOT NULL AND [{measure_col}] IS NOT NULL "
@@ -80,7 +80,7 @@ def generate_3d_html(
     measure_col : str – column for y-axis (business volume)
     theme_col : str – column for z-axis grouping (theme / dimension)
     title : str – page title
-    limit : int – max rows to visualise
+    limit : int – max rows to visualize
     """
     rows = _query_wide_data(conn, wide_table, time_col, measure_col, theme_col, limit)
 
@@ -191,7 +191,7 @@ def _empty_html(title: str) -> str:
 <!DOCTYPE html>
 <html lang="zh">
 <head><meta charset="utf-8"><title>{_esc(title)}</title></head>
-<body><h2>No data available for visualisation.</h2></body>
+<body><h2>No data available for visualization.</h2></body>
 </html>"""
 
 
