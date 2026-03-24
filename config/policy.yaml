@@ -48,7 +48,7 @@ allowlist:
     - "pip"
 
 deny_patterns:
-  - "(?i)rm\\s+-rf\\s+/"
+  - "(?i)rm\\s+.*-r"
   - "(?i)mkfs\\b"
   - "(?i)dd\\s+if="
   - "(?i)diskpart\\b"

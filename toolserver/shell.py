@@ -23,14 +23,19 @@ def run_command(
         text=True,
         timeout=timeout_s,
     )
-    out = (proc.stdout or "") + (proc.stderr or "")
+    stdout = proc.stdout or ""
+    stderr = proc.stderr or ""
+    combined = stdout + stderr
     truncated = False
-    if len(out.encode("utf-8", errors="ignore")) > max_output_bytes:
-        out = out[:max_output_bytes]
+    encoded = combined.encode("utf-8", errors="ignore")
+    if len(encoded) > max_output_bytes:
+        combined = encoded[:max_output_bytes].decode("utf-8", errors="ignore")
         truncated = True
     return {
         "exit_code": proc.returncode,
-        "output": out,
+        "stdout": stdout if not truncated else combined,
+        "stderr": stderr if not truncated else "",
+        "output": combined,
         "truncated": truncated,
         "platform": platform.platform(),
         "cwd": cwd,

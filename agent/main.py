@@ -12,6 +12,20 @@ from .prompts import DEV_PROMPT, SYSTEM_PROMPT
 
 TOOLSERVER = "http://127.0.0.1:7331"
 
+def _try_parse_tool_call(text: str) -> dict | None:
+    """Return a parsed tool-call dict if *text* is a valid JSON tool invocation."""
+    text = text.strip()
+    if not (text.startswith("{") and text.endswith("}")):
+        return None
+    try:
+        obj = json.loads(text)
+    except (json.JSONDecodeError, ValueError):
+        return None
+    if isinstance(obj, dict) and "tool" in obj:
+        return obj
+    return None
+
+
 TOOLS = {
     "get_system_info": "/tool/get_system_info",
     "run_command": "/tool/run_command",
@@ -47,15 +61,10 @@ def run(task: str, model: str = "qwen2.5:7b") -> None:
         resp = ollama_chat(model=model, messages=messages)
         content: str = resp["message"]["content"].strip()
 
-        # Convention: a bare JSON object means "call this tool"
-        if content.startswith("{") and content.endswith("}"):
-            try:
-                call = json.loads(content)
-            except json.JSONDecodeError:
-                print(content)
-                break
-
-            tool = call.get("tool")
+        # Convention: a bare JSON object with a "tool" key means "call this tool"
+        call = _try_parse_tool_call(content)
+        if call is not None:
+            tool = call["tool"]
             args = call.get("args", {})
 
             if tool not in TOOLS:
@@ -64,7 +73,10 @@ def run(task: str, model: str = "qwen2.5:7b") -> None:
 
             tool_result = call_tool(tool, args)
             messages.append({"role": "assistant", "content": content})
-            messages.append({"role": "tool", "content": json.dumps(tool_result, ensure_ascii=False)})
+            messages.append({
+                "role": "assistant",
+                "content": f"[tool result] {json.dumps(tool_result, ensure_ascii=False)}",
+            })
             continue
 
         # Otherwise the model produced a natural-language response – print and stop.

@@ -1,2 +1,0 @@
-[console_scripts]
-ollama-exec = client.cli:main

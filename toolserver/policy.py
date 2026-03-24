@@ -49,8 +49,8 @@ def enforce_workspace(policy: dict, path: str) -> Tuple[bool, str, str]:
     Returns ``(True, "ok", abs_path)`` on success or
     ``(False, reason, abs_path)`` on denial.
     """
-    root = policy["workspace_root"]
-    abs_path = os.path.abspath(os.path.expanduser(path))
+    root = os.path.realpath(policy["workspace_root"])
+    abs_path = os.path.realpath(os.path.abspath(os.path.expanduser(path)))
     if not (abs_path == root or abs_path.startswith(root + os.sep)):
         return False, f"Path outside workspace_root: {abs_path}", abs_path
     return True, "ok", abs_path

@@ -141,7 +141,12 @@ def list_dir(inp: PathIn) -> dict:
     if not ok:
         append_audit(AUDIT_LOG, {"tool": "list_dir", "args": inp.model_dump(), "ok": False, "error": msg})
         return _fail("list_dir", msg)
-    entries = os.listdir(abs_path)
+    try:
+        entries = os.listdir(abs_path)
+    except OSError as exc:
+        err = str(exc)
+        append_audit(AUDIT_LOG, {"tool": "list_dir", "args": {"path": abs_path}, "ok": False, "error": err})
+        return _fail("list_dir", err)
     append_audit(AUDIT_LOG, {"tool": "list_dir", "args": {"path": abs_path}, "ok": True})
     return _ok("list_dir", {"path": abs_path, "entries": entries})
 
