@@ -1,0 +1,72 @@
+workspace_root: "~/agent-work"
+
+max_exec_seconds: 30
+max_output_bytes: 200000
+
+# Per-OS command allowlists (executable name only, no arguments)
+allowlist:
+  linux:
+    - "bash"
+    - "sh"
+    - "ls"
+    - "cat"
+    - "pwd"
+    - "whoami"
+    - "id"
+    - "df"
+    - "du"
+    - "ps"
+    - "grep"
+    - "sed"
+    - "awk"
+    - "git"
+    - "python3"
+    - "pip"
+  darwin:
+    - "bash"
+    - "sh"
+    - "ls"
+    - "cat"
+    - "pwd"
+    - "whoami"
+    - "id"
+    - "df"
+    - "du"
+    - "ps"
+    - "grep"
+    - "sed"
+    - "awk"
+    - "git"
+    - "python3"
+    - "pip3"
+  windows:
+    - "pwsh"
+    - "powershell"
+    - "cmd"
+    - "git"
+    - "python"
+    - "pip"
+
+deny_patterns:
+  - "(?i)rm\\s+-rf\\s+/"
+  - "(?i)mkfs\\b"
+  - "(?i)dd\\s+if="
+  - "(?i)diskpart\\b"
+  - "(?i)shutdown\\b"
+  - "(?i)reboot\\b"
+  - "(?i)format\\b"
+
+files:
+  allow_write_extensions:
+    - ".txt"
+    - ".md"
+    - ".json"
+    - ".yaml"
+    - ".yml"
+    - ".py"
+    - ".sql"
+  max_write_bytes: 500000
+
+db:
+  force_transaction: true
+  write_row_limit: 1000
