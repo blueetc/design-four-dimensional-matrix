@@ -48,7 +48,7 @@ class SQLiteDB:
         # Only attempt for UPDATE / DELETE
         m = re.match(
             r"(?is)^\s*(?:UPDATE\s+\S+\s+SET\s+.+?|DELETE\s+FROM\s+\S+)"
-            r"\s+(WHERE\s+.+)$",
+            r"\s+(WHERE\s+.+?)\s*;?\s*$",
             sql,
         )
         if not m:

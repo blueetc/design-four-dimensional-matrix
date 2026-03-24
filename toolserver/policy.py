@@ -90,6 +90,10 @@ def check_sensitive_path(policy: dict, abs_path: str) -> Tuple[bool, str]:
 _SQL_DENY_PATTERNS: list[str] = [
     r"(?i)\bDROP\s+DATABASE\b",
     r"(?i)\bTRUNCATE\b",
+    r"(?i)\bDROP\s+SCHEMA\b",
+    r"(?i)\bALTER\s+USER\b",
+    r"(?i)\bGRANT\b",
+    r"(?i)\bREVOKE\b",
 ]
 
 # Statements that *require* a WHERE clause.

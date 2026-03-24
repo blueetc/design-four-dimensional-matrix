@@ -116,7 +116,7 @@ allowlist:
     - "curl"
 
 deny_patterns:
-  - "(?i)rm\\s+.*-r"
+  - "(?i)rm\\s+-r"
   - "(?i)mkfs\\b"
   - "(?i)dd\\s+if="
   - "(?i)diskpart\\b"

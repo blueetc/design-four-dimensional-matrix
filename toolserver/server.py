@@ -252,7 +252,7 @@ def db_exec(inp: SQLIn) -> dict:
             force_transaction=POLICY["db"]["force_transaction"],
             row_limit=row_limit,
         )
-    except (ValueError, Exception) as exc:
+    except (ValueError, OSError) as exc:
         err = str(exc)
         append_audit(AUDIT_LOG, {"tool": "db_exec", "args": {"sql": inp.sql}, "ok": False, "error": err})
         return _fail("db_exec", err)
