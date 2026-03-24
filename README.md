@@ -46,12 +46,23 @@ uvicorn toolserver.server:app --host 127.0.0.1 --port 7331
 ### 3. Run the Agent
 
 ```bash
-# Default demo task
+# Default demo task (single-shot)
 python -m agent.main
 
-# Custom task
+# Custom task (single-shot)
 python -m agent.main "列出workspace目录内容"
+
+# Interactive REPL — continuous tasks with follow-up questions
+python -m agent.main -i
+python -m agent.main --interactive
+
+# Interactive mode with a specific model
+python -m agent.main --interactive --model qwen2.5:14b
 ```
+
+In interactive mode the conversation history is preserved across turns, so you
+can ask follow-up questions that reference previous results without the agent
+repeating earlier work.
 
 ## Directory Layout
 
