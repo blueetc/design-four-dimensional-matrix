@@ -1,0 +1,9 @@
+[tool]
+name = "ollama-agent"
+version = "0.1.0"
+
+[dependencies]
+fastapi = "^0.68.0"
+uvicorn = "^0.15.0"
+requests = "^2.26.0"
+pyyaml = "^5.4.1"
