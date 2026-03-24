@@ -1,9 +1,29 @@
-[tool]
-name = "ollama-agent"
-version = "0.1.0"
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
 
-[dependencies]
-fastapi = "^0.68.0"
-uvicorn = "^0.15.0"
-requests = "^2.26.0"
-pyyaml = "^5.4.1"
+[project]
+name = "ollama-exec"
+version = "0.1.0"
+description = "Local Ollama automation agent with a policy-controlled tool server"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "blueetc" }]
+dependencies = [
+  "fastapi>=0.110",
+  "uvicorn>=0.27",
+  "pydantic>=2",
+  "requests>=2.31",
+  "PyYAML>=6.0",
+]
+
+[project.scripts]
+ollama-exec = "client.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "."}
+
+[tool.setuptools.packages.find]
+where = ["."!!!!!!!!
+include = ["agent*", "toolserver*", "client*"]
