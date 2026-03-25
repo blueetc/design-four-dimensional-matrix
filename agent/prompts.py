@@ -148,7 +148,7 @@ KNOWLEDGE_PROMPT = """\
 | 文件查看 | ``ls -la``, ``cat``, ``head -n20``, ``tail -f``, ``wc -l`` |
 | 文件搜索 | ``find . -name '*.py'``, ``grep -rn 'pattern' dir/`` |
 | 文件操作 | ``cp -r``, ``mv``, ``mkdir -p``, ``touch``, ``chmod 644`` |
-| 文本处理 | ``sed 's/old/new/g'``, ``awk '{print $1}'``, ``sort \| uniq -c \| sort -rn`` |
+| 文本处理 | ``sed 's/old/new/g'``, ``awk '{print $1}'``, ``sort | uniq -c | sort -rn`` |
 | 进程管理 | ``ps aux``, ``top``, ``kill PID`` |
 | 磁盘空间 | ``df -h``, ``du -sh *`` |
 | 网络诊断 | ``curl -s URL``, ``wget -O file URL`` |
@@ -169,7 +169,7 @@ KNOWLEDGE_PROMPT = """\
 #### 通用原则
 - 优先使用**只读命令**侦察，再执行变更。
 - 用管道组合小工具完成复杂任务（Unix 哲学）。
-- 长输出加 ``\| head -50`` 或 LIMIT 避免刷屏。
+- 长输出加 ``| head -50`` 或 LIMIT 避免刷屏。
 
 ---
 

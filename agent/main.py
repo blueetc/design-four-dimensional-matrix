@@ -13,12 +13,13 @@ Multi-model support:
 
 from __future__ import annotations
 
+import os
 import json
 import sys
 
 import requests
 
-from .ollama_client import list_models, ollama_chat
+from .ollama_client import OllamaConnectionError, list_models, ollama_chat
 from .prompts import DEV_PROMPT, KNOWLEDGE_PROMPT, ORCHESTRATOR_PROMPT, SYSTEM_PROMPT
 
 TOOLSERVER = "http://127.0.0.1:7331"
@@ -71,9 +72,20 @@ DEFAULT_PANEL_MODELS: list[str] = []
 def call_tool(tool: str, args: dict) -> dict:
     """Forward a tool invocation to the local tool server."""
     url = TOOLSERVER + TOOLS[tool]
-    resp = requests.post(url, json=args, timeout=60)
-    resp.raise_for_status()
-    return resp.json()
+    try:
+        resp = requests.post(url, json=args, timeout=60)
+        resp.raise_for_status()
+        return resp.json()
+    except requests.ConnectionError:
+        return {
+            "ok": False,
+            "tool": tool,
+            "result": None,
+            "error": (
+                f"⚠️  工具服务器未连接 ({TOOLSERVER})。\n"
+                "请先启动: uvicorn toolserver.server:app --host 127.0.0.1 --port 7331"
+            ),
+        }
 
 
 def _init_messages() -> list[dict]:
@@ -173,7 +185,10 @@ def run(
                 messages.append({"role": "assistant", "content": err})
                 break
 
+            print(f"🔧 调用 {tool_name}…", flush=True)
             tool_result = call_tool(tool_name, args)
+            ok = tool_result.get("ok", False)
+            print(f"   → {'✓' if ok else '✗'} {tool_name}", flush=True)
             messages.append({"role": "assistant", "content": content})
             messages.append({
                 "role": "assistant",
@@ -432,16 +447,24 @@ def _handle_slash_command(
 
     # /panel+ <model> – add model to panel list
     if verb == "/panel+":
-        if rest and rest not in panel_models:
+        if not rest:
+            print("用法: /panel+ <模型名>")
+        elif rest in panel_models:
+            print(f"{rest} 已在 Panel 中: {panel_models}")
+        else:
             panel_models.append(rest)
             print(f"已添加 {rest} 到 Panel → {panel_models}")
         return active_model, messages, panel_models, True
 
     # /panel- <model> – remove model from panel list
     if verb == "/panel-":
-        if rest in panel_models:
+        if not rest:
+            print("用法: /panel- <模型名>")
+        elif rest in panel_models:
             panel_models.remove(rest)
             print(f"已移除 {rest} → {panel_models}")
+        else:
+            print(f"模型 {rest} 不在 Panel 中。当前: {panel_models or '(空)'}")
         return active_model, messages, panel_models, True
 
     # /orch <task> – multi-model orchestration
@@ -463,6 +486,22 @@ def _handle_slash_command(
         })
         return active_model, messages, panel_models, True
 
+    # /status – show current session status
+    if verb == "/status":
+        # Check toolserver connectivity
+        try:
+            requests.get(TOOLSERVER + "/docs", timeout=3)
+            ts_status = "✓ 已连接"
+        except Exception:
+            ts_status = "✗ 未连接"
+        print(
+            f"  当前模型:   {active_model}\n"
+            f"  Panel 列表: {', '.join(panel_models) if panel_models else '(空 — 自动使用所有本地模型)'}\n"
+            f"  工具服务器: {ts_status} ({TOOLSERVER})\n"
+            f"  对话消息数: {len(messages)}"
+        )
+        return active_model, messages, panel_models, True
+
     # /knowledge – display the built-in knowledge summary
     if verb == "/knowledge":
         print(KNOWLEDGE_PROMPT)
@@ -480,6 +519,7 @@ def _handle_slash_command(
             "  /panel- <模型>       从 Panel 移除模型\n"
             "  /orch <任务>         多模型编排（指挥官模式）\n"
             "  /knowledge           查看内置知识库\n"
+            "  /status              查看当前状态\n"
             "  /help                显示此帮助\n"
             "  exit/quit/q/退出     退出"
         )
@@ -523,7 +563,7 @@ def run_interactive(model: str = "qwen2.5:7b") -> None:
 
     while True:
         try:
-            user_input = input("You> ").strip()
+            user_input = input(f"[{model}] You> ").strip()
         except (EOFError, KeyboardInterrupt):
             print("\n再见！")
             break
@@ -550,44 +590,42 @@ def run_interactive(model: str = "qwen2.5:7b") -> None:
         print()  # blank line between turns
 
 
+_DEFAULT_MODEL = os.environ.get("OLLAMA_MODEL", "qwen2.5:7b")
+
+
 def main() -> None:
-    """CLI entry-point.
+    """CLI entry-point for the local automation agent."""
+    import argparse
 
-    Usage::
+    parser = argparse.ArgumentParser(
+        prog="ollama-exec",
+        description="本地自动化代理 — 由 Ollama 驱动，策略引擎守护",
+    )
+    parser.add_argument(
+        "task",
+        nargs="*",
+        help="要执行的任务描述（单次模式）",
+    )
+    parser.add_argument(
+        "-i", "--interactive",
+        action="store_true",
+        help="启动交互式 REPL（支持追问、多模型切换）",
+    )
+    parser.add_argument(
+        "-m", "--model",
+        default=_DEFAULT_MODEL,
+        help=f"Ollama 模型名（默认: {_DEFAULT_MODEL}，可通过 OLLAMA_MODEL 环境变量设置）",
+    )
 
-        # Single-shot (original behaviour)
-        python -m agent.main "创建 hello.txt 并读取"
+    args = parser.parse_args()
 
-        # Interactive REPL with follow-up support
-        python -m agent.main -i
-        python -m agent.main --interactive
-        python -m agent.main --interactive --model qwen2.5:14b
-    """
-    args = sys.argv[1:]
-
-    # Parse flags
-    interactive = False
-    model = "qwen2.5:7b"
-    positional: list[str] = []
-
-    i = 0
-    while i < len(args):
-        if args[i] in ("-i", "--interactive"):
-            interactive = True
-        elif args[i] in ("-m", "--model") and i + 1 < len(args):
-            i += 1
-            model = args[i]
-        else:
-            positional.append(args[i])
-        i += 1
-
-    if interactive:
-        run_interactive(model=model)
+    if args.interactive:
+        run_interactive(model=args.model)
     else:
-        task = " ".join(positional) if positional else (
+        task = " ".join(args.task) if args.task else (
             "在workspace里创建一个hello.txt，内容为Hello from agent，然后读取并显示它。"
         )
-        run(task, model=model)
+        run(task, model=args.model)
 
 
 if __name__ == "__main__":

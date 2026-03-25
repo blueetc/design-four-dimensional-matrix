@@ -99,6 +99,37 @@ repeating earlier work.
 | `db_schema` | `POST /tool/db_schema` | Show database schema |
 | `db_query` | `POST /tool/db_query` | Run a read-only SQL query |
 | `db_exec` | `POST /tool/db_exec` | Execute a write SQL statement (policy-checked) |
+| `analyze_fields` | `POST /tool/analyze_fields` | Sample tables and infer field semantics (time/dimension/measure) |
+| `design_wide_table` | `POST /tool/design_wide_table` | Auto-design a wide-table schema from analysis |
+| `create_wide_table` | `POST /tool/create_wide_table` | Create the wide table in the database |
+| `etl_to_wide_table` | `POST /tool/etl_to_wide_table` | Incrementally load source data into the wide table |
+| `visualize_3d` | `POST /tool/visualize_3d` | Generate an interactive 3-D scatter HTML |
+| `list_models` | `POST /tool/list_models` | List locally available Ollama models |
+
+## Interactive REPL Commands
+
+In interactive mode (`-i`/`--interactive`), the following slash commands are
+available:
+
+| Command | Description |
+|---------|-------------|
+| `/models` | List all locally available Ollama models |
+| `/model [name]` | Show or switch the active model |
+| `/ask <model> <question>` | One-shot question to a different model |
+| `/panel <question>` | Ask all Panel models the same question |
+| `/panel+ <model>` | Add a model to the Panel list |
+| `/panel- <model>` | Remove a model from the Panel list |
+| `/orch <task>` | Multi-model orchestration (director–worker pattern) |
+| `/knowledge` | Display the built-in knowledge base |
+| `/status` | Show current session status (model, panel, connectivity) |
+| `/help` | Show available commands |
+| `exit`/`quit`/`q`/`退出`/`结束` | Exit the session |
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `OLLAMA_MODEL` | `qwen2.5:7b` | Default Ollama model for the agent |
 
 ## Security Model
 

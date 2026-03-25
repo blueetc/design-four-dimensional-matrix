@@ -19,7 +19,7 @@ dependencies = [
 ]
 
 [project.scripts]
-ollama-exec = "client.cli:main"
+ollama-exec = "agent.main:main"
 
 [tool.setuptools]
 package-dir = {"" = "."}
