@@ -132,6 +132,178 @@ ORCHESTRATOR_PROMPT = """\
 """
 
 
+KNOWLEDGE_PROMPT = """\
+## 知识库：命令、编程、数据库、推理技能
+
+以下是你在执行任务时可以依赖的参考知识。请在思考和操作中灵活运用。
+
+---
+
+### 一、终端命令速查
+
+#### Linux / macOS
+
+| 类别 | 常用命令 |
+|------|---------|
+| 文件查看 | ``ls -la``, ``cat``, ``head -n20``, ``tail -f``, ``wc -l`` |
+| 文件搜索 | ``find . -name '*.py'``, ``grep -rn 'pattern' dir/`` |
+| 文件操作 | ``cp -r``, ``mv``, ``mkdir -p``, ``touch``, ``chmod 644`` |
+| 文本处理 | ``sed 's/old/new/g'``, ``awk '{print $1}'``, ``sort \| uniq -c \| sort -rn`` |
+| 进程管理 | ``ps aux``, ``top``, ``kill PID`` |
+| 磁盘空间 | ``df -h``, ``du -sh *`` |
+| 网络诊断 | ``curl -s URL``, ``wget -O file URL`` |
+| 压缩归档 | ``tar czf out.tar.gz dir/``, ``tar xzf file.tar.gz`` |
+| 版本控制 | ``git status``, ``git log --oneline -10``, ``git diff``, ``git stash`` |
+| 系统信息 | ``uname -a``, ``whoami``, ``hostname``, ``date``, ``env`` |
+
+#### Windows (PowerShell)
+
+| 类别 | 常用命令 |
+|------|---------|
+| 文件查看 | ``Get-ChildItem``, ``Get-Content``, ``Select-Object -First 20`` |
+| 文件搜索 | ``Get-ChildItem -Recurse -Filter *.py``, ``Select-String 'pattern'`` |
+| 文件操作 | ``Copy-Item -Recurse``, ``Move-Item``, ``New-Item -ItemType Directory`` |
+| 进程管理 | ``Get-Process``, ``Stop-Process -Id PID`` |
+| 系统信息 | ``systeminfo``, ``whoami``, ``hostname``, ``$env:PATH`` |
+
+#### 通用原则
+- 优先使用**只读命令**侦察，再执行变更。
+- 用管道组合小工具完成复杂任务（Unix 哲学）。
+- 长输出加 ``\| head -50`` 或 LIMIT 避免刷屏。
+
+---
+
+### 二、编程知识
+
+#### Python（主要语言）
+
+- **虚拟环境**: ``python3 -m venv .venv && source .venv/bin/activate``
+- **包管理**: ``pip install -e .``, ``pip freeze > requirements.txt``
+- **常用库**: json, os, sys, pathlib, datetime, re, sqlite3, requests, \
+urllib, csv, collections, dataclasses, typing, logging
+- **代码规范**: 遵循 PEP 8；类型注解（``-> list[dict]``）；文档字符串
+- **错误处理**: try/except 捕获具体异常；使用 ``logging`` 记录错误
+- **测试**: ``pytest`` 框架；``mock.patch`` 模拟外部依赖
+
+#### SQL（数据库查询语言）
+
+- **查询**: ``SELECT col1, col2 FROM table WHERE cond LIMIT 100``
+- **聚合**: ``GROUP BY``, ``HAVING``, ``COUNT(*)``, ``SUM()``, ``AVG()``
+- **连接**: ``JOIN``, ``LEFT JOIN``, ``INNER JOIN ON a.id = b.id``
+- **子查询**: ``WHERE id IN (SELECT id FROM ...)``
+- **窗口函数**: ``ROW_NUMBER() OVER (PARTITION BY ... ORDER BY ...)``
+- **写入**: ``INSERT INTO ... VALUES (...)``, ``UPDATE ... SET ... WHERE ...``
+- **事务**: ``BEGIN; ... COMMIT;``（失败时 ``ROLLBACK``）
+- **DDL**: ``CREATE TABLE IF NOT EXISTS``, ``ALTER TABLE ADD COLUMN``
+
+#### Shell 脚本
+
+- **条件**: ``if [ -f file ]; then ... fi``
+- **循环**: ``for f in *.py; do echo "$f"; done``
+- **变量**: ``VAR=$(command)``, ``"$VAR"`` 双引号防止分词
+- **退出码**: ``$?`` 获取上条命令退出码；``set -e`` 遇错即停
+
+---
+
+### 三、数据库知识
+
+#### SQLite（默认数据库）
+
+- 轻量级、零配置、单文件数据库，适合本地原型和嵌入式场景
+- **数据类型**: TEXT, INTEGER, REAL, BLOB（动态类型）
+- **自增主键**: ``INTEGER PRIMARY KEY AUTOINCREMENT``
+- **JSON 支持**: ``json_extract(col, '$.key')``, ``json_each()``
+- **pragma**: ``PRAGMA table_info(tablename)`` 查看表结构
+- **性能**: 单写者锁；大批量写入用事务包裹提速 100x
+- **备份**: ``cp database.db database.db.bak`` 或 ``.backup`` 命令
+
+#### 关系型数据库通用
+
+- **范式设计**: 1NF → 2NF → 3NF 消除冗余，必要时反范式化
+- **索引策略**: 主键自动索引；高频查询条件加索引；避免过多索引影响写入
+- **宽表设计**: 多表 JOIN 扁平化为一张分析宽表，适合 OLAP 查询和可视化
+- **ETL 流程**: Extract（提取）→ Transform（转换）→ Load（加载）
+- **增量加载**: 通过水位线（如 rowid、update_time）只处理新增/变更数据
+
+#### PostgreSQL / MySQL（扩展支持）
+
+- 相比 SQLite 支持并发写入、事务隔离级别、存储过程、JSONB
+- 需通过 databases.yaml 配置连接信息
+- 推荐生产环境使用只读 + 读写分离账号
+
+---
+
+### 四、大模型推理技能
+
+#### 思维链（Chain of Thought）
+
+1. **分解任务**: 将复杂任务拆为可执行的子步骤
+2. **先侦察后行动**: 先 SELECT 再 UPDATE，先 ls 再 rm
+3. **逐步验证**: 每步操作后检查结果，再决定下一步
+4. **回溯修正**: 如果某步失败，分析原因，换方案重试
+
+#### 工具使用策略
+
+- **选对工具**: 文件操作 → read_file/write_file；查数据 → db_query；\
+改数据 → db_exec；看环境 → get_system_info
+- **组合调用**: 复杂任务 = 多次工具调用的编排
+- **错误恢复**: 工具返回失败 → 分析 error 字段 → 调整参数 → 重试或换方案
+
+#### 多模型协作
+
+- **专业分工**: coder 模型写代码、通用模型做分析规划、小模型做简单查询
+- **交叉验证**: 让多模型回答同一问题（/panel），比较一致性
+- **编排模式**: 指挥官分解任务 → 委派子任务 → 汇总反馈 → 交付成果
+- **反馈循环**: 工作模型的输出作为下轮输入，迭代优化
+
+#### 常见推理模式
+
+| 模式 | 适用场景 | 示例 |
+|------|---------|------|
+| 分析-计划-执行 | 多步骤操作任务 | 先查schema → 再设计SQL → 执行 → 验证 |
+| 假设-验证 | 调试与排查 | 假设端口被占 → netstat检查 → 确认或排除 |
+| 归纳-演绎 | 数据分析 | 从样本归纳规律 → 应用到全量数据 |
+| 类比迁移 | 相似问题求解 | A表的ETL方案 → 类推到B表 |
+| 分治法 | 大规模任务 | 拆成小批量 → 逐批执行 → 合并结果 |
+
+---
+
+### 五、操作技能参考
+
+#### 文件管理技能
+
+- 创建前检查是否存在（幂等）
+- 写入前备份（.bak）
+- 大文件用分块读取，避免内存溢出
+- 路径用 os.path.join 拼接，兼容跨平台
+
+#### 数据分析技能
+
+- 先用 ``analyze_fields`` 采样推断字段语义
+- 用 ``design_wide_table`` 自动设计分析宽表
+- 用 ``etl_to_wide_table`` 增量加载数据
+- 用 ``visualize_3d`` 生成 3D 交互式可视化
+- 分析前先看 schema + 样本数据，避免猜测
+
+#### 安全与审计技能
+
+- 遵守 policy.yaml 的安全策略
+- 写操作必须在事务中执行
+- 高危命令（rm -r, DROP）默认被策略拦截
+- 每步操作都有审计记录（audit.jsonl）
+- 敏感路径（/etc, /boot, C:\\Windows）禁止写入
+
+#### 调试与排错技能
+
+- 读取错误日志：``tail -50 logfile``
+- 检查进程状态：``ps aux | grep process``
+- 检查端口占用：``ss -tlnp`` (Linux) / ``netstat -an`` (通用)
+- 检查磁盘空间：``df -h``
+- 检查权限：``ls -la file``, ``stat file``
+- 数据库调试：``EXPLAIN QUERY PLAN`` (SQLite), ``EXPLAIN`` (通用)
+"""
+
+
 DEV_PROMPT = """\
 ## 策略优先级
 

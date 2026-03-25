@@ -58,7 +58,7 @@ class TestTryParseToolCall:
 class TestInitMessages:
     def test_creates_two_system_messages(self) -> None:
         msgs = _init_messages()
-        assert len(msgs) == 2
+        assert len(msgs) == 3
         assert all(m["role"] == "system" for m in msgs)
 
 
@@ -72,8 +72,8 @@ class TestRunSingleTurn:
         """Model answers with plain text → printed and returned."""
         mock_chat.return_value = _fake_ollama_response("任务完成。")
         msgs = run("做个测试")
-        # messages should contain system(2) + user(1) + assistant(1)
-        assert len(msgs) == 4
+        # messages should contain system(3) + user(1) + assistant(1)
+        assert len(msgs) == 5
         assert msgs[-1]["role"] == "assistant"
         assert msgs[-1]["content"] == "任务完成。"
 
@@ -91,8 +91,8 @@ class TestRunSingleTurn:
         mock_tool.return_value = _fake_tool_response(content="hello")
 
         msgs = run("读取 a.txt")
-        # system(2) + user(1) + assistant(tool call) + assistant(tool result) + assistant(NL)
-        assert len(msgs) == 6
+        # system(3) + user(1) + assistant(tool call) + assistant(tool result) + assistant(NL)
+        assert len(msgs) == 7
         assert msgs[-1]["content"] == "文件内容是 hello。"
 
     @mock.patch("agent.main.ollama_chat")
@@ -101,8 +101,8 @@ class TestRunSingleTurn:
         bad_call = json.dumps({"tool": "delete_everything", "args": {}})
         mock_chat.return_value = _fake_ollama_response(bad_call)
         msgs = run("坏任务")
-        # system(2) + user(1) + assistant error msg(1)
-        assert len(msgs) == 4
+        # system(3) + user(1) + assistant error msg(1)
+        assert len(msgs) == 5
         assert "Unknown tool" in msgs[-1]["content"]
 
 
@@ -116,12 +116,12 @@ class TestRunMultiTurn:
         """Two successive run() calls share the same messages list."""
         mock_chat.return_value = _fake_ollama_response("第一轮完成。")
         msgs = run("第一个任务")
-        assert len(msgs) == 4  # 2 sys + 1 user + 1 assistant
+        assert len(msgs) == 5  # 3 sys + 1 user + 1 assistant
 
         mock_chat.return_value = _fake_ollama_response("第二轮完成。")
         msgs = run("追问", messages=msgs)
-        # previous 4 + new user(1) + new assistant(1)
-        assert len(msgs) == 6
+        # previous 5 + new user(1) + new assistant(1)
+        assert len(msgs) == 7
         assert msgs[-2]["role"] == "user"
         assert msgs[-2]["content"] == "追问"
         assert msgs[-1]["content"] == "第二轮完成。"
@@ -135,7 +135,7 @@ class TestRunMultiTurn:
         msgs = run("t2", messages=msgs)
         mock_chat.return_value = _fake_ollama_response("r3")
         msgs = run("t3", messages=msgs)
-        assert len(msgs) == 2 + 3 * 2  # 2 system + 3*(user+assistant)
+        assert len(msgs) == 3 + 3 * 2  # 3 system + 3*(user+assistant)
 
 
 # ---------------------------------------------------------------------------

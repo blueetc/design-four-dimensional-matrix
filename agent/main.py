@@ -19,7 +19,7 @@ import sys
 import requests
 
 from .ollama_client import list_models, ollama_chat
-from .prompts import DEV_PROMPT, ORCHESTRATOR_PROMPT, SYSTEM_PROMPT
+from .prompts import DEV_PROMPT, KNOWLEDGE_PROMPT, ORCHESTRATOR_PROMPT, SYSTEM_PROMPT
 
 TOOLSERVER = "http://127.0.0.1:7331"
 
@@ -80,6 +80,7 @@ def _init_messages() -> list[dict]:
     """Create the initial system-prompt messages list."""
     return [
         {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "system", "content": KNOWLEDGE_PROMPT},
         {"role": "system", "content": DEV_PROMPT},
     ]
 
@@ -462,6 +463,11 @@ def _handle_slash_command(
         })
         return active_model, messages, panel_models, True
 
+    # /knowledge – display the built-in knowledge summary
+    if verb == "/knowledge":
+        print(KNOWLEDGE_PROMPT)
+        return active_model, messages, panel_models, True
+
     # /help
     if verb == "/help":
         print(
@@ -473,6 +479,7 @@ def _handle_slash_command(
             "  /panel+ <模型>       添加模型到 Panel\n"
             "  /panel- <模型>       从 Panel 移除模型\n"
             "  /orch <任务>         多模型编排（指挥官模式）\n"
+            "  /knowledge           查看内置知识库\n"
             "  /help                显示此帮助\n"
             "  exit/quit/q/退出     退出"
         )
