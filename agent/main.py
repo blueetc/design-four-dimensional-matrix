@@ -590,7 +590,7 @@ def run_interactive(model: str = "qwen2.5:7b") -> None:
         print()  # blank line between turns
 
 
-_DEFAULT_MODEL = os.environ.get("OLLAMA_MODEL", "qwen2.5:7b")
+DEFAULT_MODEL = os.environ.get("OLLAMA_MODEL", "qwen2.5:7b")
 
 
 def main() -> None:
@@ -613,8 +613,8 @@ def main() -> None:
     )
     parser.add_argument(
         "-m", "--model",
-        default=_DEFAULT_MODEL,
-        help=f"Ollama 模型名（默认: {_DEFAULT_MODEL}，可通过 OLLAMA_MODEL 环境变量设置）",
+        default=DEFAULT_MODEL,
+        help=f"Ollama 模型名（默认: {DEFAULT_MODEL}，可通过 OLLAMA_MODEL 环境变量设置）",
     )
 
     args = parser.parse_args()

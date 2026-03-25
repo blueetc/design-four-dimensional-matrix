@@ -10,7 +10,7 @@ import pytest
 import requests
 
 from agent.main import (
-    _DEFAULT_MODEL,
+    DEFAULT_MODEL,
     _handle_slash_command,
     _init_messages,
     call_tool,
@@ -209,16 +209,16 @@ class TestReplPrompt:
 
 class TestDefaultModel:
     def test_default_model_from_env(self) -> None:
-        """_DEFAULT_MODEL reflects OLLAMA_MODEL env when set."""
+        """DEFAULT_MODEL reflects OLLAMA_MODEL env when set."""
         # We can't easily re-import, but we can verify the pattern
-        assert isinstance(_DEFAULT_MODEL, str)
-        assert len(_DEFAULT_MODEL) > 0
+        assert isinstance(DEFAULT_MODEL, str)
+        assert len(DEFAULT_MODEL) > 0
 
     def test_env_var_respected_in_module(self) -> None:
         """os.environ.get('OLLAMA_MODEL', 'qwen2.5:7b') pattern is used."""
         import agent.main as m
         # Ensure the module-level default is accessible
-        assert hasattr(m, "_DEFAULT_MODEL")
+        assert hasattr(m, "DEFAULT_MODEL")
 
 
 # ---------------------------------------------------------------------------
