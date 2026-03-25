@@ -216,6 +216,11 @@ class TestRenderDashboard:
         html = render_dashboard()
         assert '"Escape"' in html
 
+    def test_contains_focus_trap(self) -> None:
+        """Shortcut overlay has a focus trap for accessibility."""
+        html = render_dashboard()
+        assert "Focus trap" in html or "focus trap" in html
+
 
 # ---------------------------------------------------------------------------
 # TOOLS metadata integrity

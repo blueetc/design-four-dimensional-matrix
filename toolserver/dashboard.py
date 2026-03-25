@@ -560,6 +560,14 @@ function toggleShortcuts() {{
   }}
 }}
 
+// Focus trap for shortcut overlay
+document.getElementById("shortcut-overlay").addEventListener("keydown", (e) => {{
+  if (e.key === "Tab") {{
+    const btn = e.currentTarget.querySelector("button");
+    if (btn) {{ e.preventDefault(); btn.focus(); }}
+  }}
+}});
+
 // --- UI helpers ---
 function addMsg(role, text, opts) {{
   opts = opts || {{}};
