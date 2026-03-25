@@ -130,7 +130,7 @@ class TestRunOrchestrateDelegate:
 # run_orchestrate – broadcast then finish
 # ---------------------------------------------------------------------------
 
-class TestRunOrchestrrateBroadcast:
+class TestRunOrchestrateBroadcast:
     @mock.patch("agent.main.ollama_chat")
     @mock.patch("agent.main.list_models", return_value=FAKE_MODELS)
     def test_broadcast_then_finish(
@@ -176,7 +176,7 @@ class TestRunOrchestratePlainText:
 # run_orchestrate – max rounds
 # ---------------------------------------------------------------------------
 
-class TestRunOrchestateMaxRounds:
+class TestRunOrchestrateMaxRounds:
     @mock.patch("agent.main.ollama_chat")
     @mock.patch("agent.main.list_models", return_value=FAKE_MODELS)
     def test_stops_at_max_rounds(
@@ -198,7 +198,7 @@ class TestRunOrchestateMaxRounds:
 # run_orchestrate – worker failure
 # ---------------------------------------------------------------------------
 
-class TestRunOrchestateWorkerFailure:
+class TestRunOrchestrateWorkerFailure:
     @mock.patch("agent.main.ollama_chat")
     @mock.patch("agent.main.list_models", return_value=FAKE_MODELS)
     def test_delegate_worker_failure(
@@ -244,7 +244,7 @@ class TestRunOrchestateWorkerFailure:
 # run_orchestrate – explicit worker models
 # ---------------------------------------------------------------------------
 
-class TestRunOrchestateExplicitWorkers:
+class TestRunOrchestrateExplicitWorkers:
     @mock.patch("agent.main.ollama_chat")
     def test_uses_explicit_workers(self, mock_chat: mock.Mock) -> None:
         """When worker_models are explicitly provided, uses them."""
