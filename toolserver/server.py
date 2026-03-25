@@ -9,6 +9,7 @@ import shutil
 
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
+from starlette.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from .audit import append_audit
@@ -59,6 +60,9 @@ import threading
 # Allows multi-turn conversations from the web UI.
 _CHAT_SESSIONS: dict[str, list[dict]] = {}
 _CHAT_LOCK = threading.Lock()
+
+# Set of session_ids that have been requested to cancel.
+_CANCEL_REQUESTS: set[str] = set()
 
 # Maximum sessions kept in memory to prevent unbounded growth.
 _MAX_SESSIONS = 64
@@ -187,6 +191,154 @@ def chat_reset(session_id: str = "default") -> dict:
         if session_id in _CHAT_SESSIONS:
             del _CHAT_SESSIONS[session_id]
     return {"ok": True, "session_id": session_id}
+
+
+@app.post("/api/chat/cancel")
+def chat_cancel(session_id: str = "default") -> dict:
+    """Request cancellation of a running agent loop for a session."""
+    with _CHAT_LOCK:
+        _CANCEL_REQUESTS.add(session_id)
+    return {"ok": True, "session_id": session_id}
+
+
+@app.post("/api/chat/stream")
+def chat_stream(inp: ChatIn) -> StreamingResponse:
+    """Run the agent loop with Server-Sent Events for real-time progress.
+
+    Emits the following SSE event types:
+    - ``thinking``   – agent is calling the LLM (before tool detection)
+    - ``tool_start`` – a tool call is about to begin
+    - ``tool_done``  – a tool call finished (with ok/error status)
+    - ``reply``      – final natural-language answer
+    - ``error``      – an error occurred
+    - ``cancelled``  – the user cancelled the task
+    - ``done``       – stream finished (always sent last)
+    """
+    import json as _json
+
+    from agent.main import _init_messages, _try_parse_tool_call, call_tool
+    from agent.main import MAX_ITERATIONS, TOOLS as AGENT_TOOLS
+    from agent.ollama_client import OllamaConnectionError, ollama_chat
+
+    model = inp.model or os.environ.get("OLLAMA_MODEL", "qwen2.5:7b")
+
+    # Retrieve or create session history.
+    with _CHAT_LOCK:
+        if inp.session_id not in _CHAT_SESSIONS:
+            if len(_CHAT_SESSIONS) >= _MAX_SESSIONS:
+                oldest = next(iter(_CHAT_SESSIONS))
+                del _CHAT_SESSIONS[oldest]
+            _CHAT_SESSIONS[inp.session_id] = _init_messages()
+        messages = _CHAT_SESSIONS[inp.session_id]
+        # Clear any stale cancel request for this session.
+        _CANCEL_REQUESTS.discard(inp.session_id)
+
+    messages.append({"role": "user", "content": inp.message})
+
+    def _sse(event: str, data: dict) -> str:
+        """Format one Server-Sent Event."""
+        payload = _json.dumps(data, ensure_ascii=False)
+        return f"event: {event}\ndata: {payload}\n\n"
+
+    def generate():
+        tool_calls: list[dict] = []
+        step = 0
+
+        try:
+            for _ in range(MAX_ITERATIONS):
+                # Check for cancellation.
+                with _CHAT_LOCK:
+                    if inp.session_id in _CANCEL_REQUESTS:
+                        _CANCEL_REQUESTS.discard(inp.session_id)
+                        yield _sse("cancelled", {"message": "任务已取消"})
+                        yield _sse("done", {})
+                        return
+
+                step += 1
+                yield _sse("thinking", {"step": step, "message": "思考中…"})
+
+                resp = ollama_chat(model=model, messages=messages)
+                content: str = resp["message"]["content"].strip()
+
+                call = _try_parse_tool_call(content)
+                if call is not None:
+                    tool_name = call["tool"]
+                    args = call.get("args", {})
+
+                    if tool_name not in AGENT_TOOLS:
+                        messages.append({"role": "assistant", "content": content})
+                        yield _sse("reply", {
+                            "reply": content,
+                            "model": model,
+                            "tool_calls": tool_calls,
+                        })
+                        break
+
+                    yield _sse("tool_start", {
+                        "step": step,
+                        "tool": tool_name,
+                        "args": args,
+                    })
+
+                    tool_result = call_tool(tool_name, args)
+                    ok = tool_result.get("ok", False)
+                    tool_calls.append({
+                        "tool": tool_name,
+                        "args": args,
+                        "ok": ok,
+                    })
+
+                    yield _sse("tool_done", {
+                        "step": step,
+                        "tool": tool_name,
+                        "ok": ok,
+                        "preview": _json.dumps(
+                            tool_result.get("result", tool_result.get("error", "")),
+                            ensure_ascii=False,
+                        )[:300],
+                    })
+
+                    messages.append({"role": "assistant", "content": content})
+                    messages.append({
+                        "role": "assistant",
+                        "content": f"[tool result] {_json.dumps(tool_result, ensure_ascii=False)}",
+                    })
+                    continue
+
+                # Natural-language reply.
+                messages.append({"role": "assistant", "content": content})
+                append_audit(AUDIT_LOG, {
+                    "tool": "chat",
+                    "args": {"message": inp.message[:200], "model": model},
+                    "ok": True,
+                })
+                yield _sse("reply", {
+                    "reply": content,
+                    "model": model,
+                    "tool_calls": tool_calls,
+                })
+                break
+            else:
+                # Max iterations reached.
+                last = messages[-1]["content"] if messages else ""
+                yield _sse("reply", {
+                    "reply": last,
+                    "model": model,
+                    "tool_calls": tool_calls,
+                })
+        except OllamaConnectionError as exc:
+            yield _sse("error", {"error": str(exc)})
+
+        yield _sse("done", {})
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 # ---------------------------------------------------------------------------

@@ -66,15 +66,41 @@ class TestRenderDashboard:
         html = render_dashboard()
         assert f"可用工具 ({len(TOOLS)})" in html
 
-    def test_calls_chat_api(self) -> None:
-        """JavaScript references the /api/chat endpoint."""
+    def test_calls_stream_api(self) -> None:
+        """JavaScript references the streaming endpoint."""
         html = render_dashboard()
-        assert "/api/chat" in html
+        assert "/api/chat/stream" in html
 
     def test_calls_reset_api(self) -> None:
         """JavaScript references the chat reset endpoint."""
         html = render_dashboard()
         assert "/api/chat/reset" in html
+
+    def test_contains_stop_button(self) -> None:
+        """Stop button for task cancellation is present."""
+        html = render_dashboard()
+        assert 'id="stop-btn"' in html
+        assert "cancelTask" in html
+
+    def test_contains_progress_step_styles(self) -> None:
+        """Progress step CSS is present for step-by-step display."""
+        html = render_dashboard()
+        assert "progress-step" in html
+
+    def test_calls_cancel_api(self) -> None:
+        """JavaScript references the cancel endpoint."""
+        html = render_dashboard()
+        assert "/api/chat/cancel" in html
+
+    def test_handles_sse_events(self) -> None:
+        """JavaScript has handleSSE function for streaming events."""
+        html = render_dashboard()
+        assert "handleSSE" in html
+
+    def test_step_detail_toggle(self) -> None:
+        """Toggle function for expanding tool call details."""
+        html = render_dashboard()
+        assert "toggleDetail" in html
 
 
 # ---------------------------------------------------------------------------
@@ -115,6 +141,27 @@ class TestChatModels:
         assert out.reply == "ok"
         assert out.tool_calls == []
         assert out.error is None
+
+
+# ---------------------------------------------------------------------------
+# Cancel mechanism (unit tests, no HTTP needed)
+# ---------------------------------------------------------------------------
+
+class TestCancelMechanism:
+    """Test the cancel request set used by the streaming endpoint."""
+
+    def test_cancel_adds_to_set(self) -> None:
+        from toolserver.server import _CANCEL_REQUESTS, _CHAT_LOCK
+        with _CHAT_LOCK:
+            _CANCEL_REQUESTS.add("test-cancel-123")
+        assert "test-cancel-123" in _CANCEL_REQUESTS
+        with _CHAT_LOCK:
+            _CANCEL_REQUESTS.discard("test-cancel-123")
+
+    def test_cancel_discard_is_safe(self) -> None:
+        from toolserver.server import _CANCEL_REQUESTS, _CHAT_LOCK
+        with _CHAT_LOCK:
+            _CANCEL_REQUESTS.discard("nonexistent-session")
 
 
 # ---------------------------------------------------------------------------
@@ -166,3 +213,21 @@ class TestDashboardEndpoint:
         resp = self.client.post("/api/chat/reset?session_id=test-sess")
         assert resp.status_code == 200
         assert resp.json()["ok"] is True
+
+    def test_chat_cancel_endpoint(self) -> None:
+        resp = self.client.post("/api/chat/cancel?session_id=test-cancel")
+        assert resp.status_code == 200
+        assert resp.json()["ok"] is True
+
+    def test_chat_stream_endpoint_exists(self) -> None:
+        """Verify the streaming endpoint responds (even with Ollama down)."""
+        with mock.patch(
+            "toolserver.server.ollama_chat",
+            side_effect=Exception("test skip"),
+        ):
+            resp = self.client.post(
+                "/api/chat/stream",
+                json={"message": "test", "session_id": "stream-test"},
+            )
+        assert resp.status_code == 200
+        assert "text/event-stream" in resp.headers.get("content-type", "")

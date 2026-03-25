@@ -143,6 +143,45 @@ def render_dashboard() -> str:
     background: transparent; color: var(--muted); border: 1px solid var(--border);
     font-weight: 400; padding: 0.6rem 0.8rem;
   }}
+  .chat-input .btn-stop {{
+    background: var(--red); display: none;
+  }}
+  .chat-input .btn-stop.visible {{
+    display: inline-block;
+  }}
+
+  /* --- Progress steps --- */
+  .progress-step {{
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.35rem 0.8rem; font-size: 0.82rem; color: var(--muted);
+    border-left: 2px solid var(--border); margin-left: 0.5rem;
+  }}
+  .progress-step.running {{
+    border-left-color: var(--yellow); color: var(--yellow);
+  }}
+  .progress-step.done {{
+    border-left-color: var(--green); color: var(--text);
+  }}
+  .progress-step.failed {{
+    border-left-color: var(--red); color: var(--red);
+  }}
+  .progress-step .step-icon {{
+    font-size: 0.9rem; flex-shrink: 0;
+  }}
+  .progress-step .step-detail {{
+    font-size: 0.75rem; color: var(--muted);
+    max-height: 0; overflow: hidden; transition: max-height 0.2s;
+    white-space: pre-wrap; word-break: break-all;
+  }}
+  .progress-step .step-detail.open {{
+    max-height: 200px; overflow-y: auto;
+    margin-top: 0.2rem; padding: 0.3rem;
+    background: var(--bg); border-radius: 4px;
+  }}
+  .progress-step .step-toggle {{
+    cursor: pointer; font-size: 0.72rem; color: var(--accent);
+    margin-left: auto; flex-shrink: 0;
+  }}
 
   /* --- Reference panel (collapsible sidebar on wide screens) --- */
   .ref-panel {{
@@ -236,6 +275,7 @@ def render_dashboard() -> str:
     <div class="chat-input">
       <input type="text" id="chat-input" placeholder="输入消息… (Enter 发送)" autocomplete="off" />
       <button id="send-btn" onclick="sendMessage()">发送</button>
+      <button id="stop-btn" class="btn-stop" onclick="cancelTask()">⏹ 停止</button>
       <button class="btn-secondary" onclick="resetChat()" title="清空对话">🗑</button>
     </div>
   </div>
@@ -283,19 +323,19 @@ def render_dashboard() -> str:
 const chatBox = document.getElementById("chat-messages");
 const chatInput = document.getElementById("chat-input");
 const sendBtn = document.getElementById("send-btn");
+const stopBtn = document.getElementById("stop-btn");
 const modelSel = document.getElementById("model-select");
 let sessionId = "web-" + Date.now();
+let currentEventSource = null;
 
 // --- UI helpers ---
 function addMsg(role, text) {{
-  // Hide welcome on first real message
   const w = document.getElementById("welcome");
   if (w) w.style.display = "none";
 
   const div = document.createElement("div");
   div.className = "msg " + role;
   if (role === "bot") {{
-    // Basic markdown-like formatting
     div.innerHTML = escapeHtml(text)
       .replace(/```([\\s\\S]*?)```/g, '<pre style="background:var(--bg);padding:0.5rem;border-radius:6px;overflow-x:auto;margin:0.3rem 0">$1</pre>')
       .replace(/`([^`]+)`/g, '<code style="background:var(--bg);padding:0.1rem 0.3rem;border-radius:3px">$1</code>')
@@ -308,60 +348,69 @@ function addMsg(role, text) {{
   return div;
 }}
 
-function addToolBadges(tools) {{
-  if (!tools || tools.length === 0) return;
-  const div = document.createElement("div");
-  div.className = "msg system";
-  div.innerHTML = tools.map(t =>
-    '<span style="display:inline-block;background:' + (t.ok ? 'var(--green)' : 'var(--red)') +
-    ';color:#fff;font-size:0.72rem;padding:0.1rem 0.45rem;border-radius:4px;margin:0.1rem 0.2rem;font-weight:600">' +
-    '🔧 ' + escapeHtml(t.tool) + '</span>'
-  ).join(" ");
-  chatBox.appendChild(div);
-  chatBox.scrollTop = chatBox.scrollHeight;
-}}
-
 function escapeHtml(s) {{
   const d = document.createElement("div");
   d.textContent = s;
   return d.innerHTML;
 }}
 
-function showTyping() {{
+function addProgressStep(icon, text, cls) {{
   const div = document.createElement("div");
-  div.className = "typing";
-  div.id = "typing-indicator";
-  div.textContent = "🤖 思考中…";
+  div.className = "progress-step " + (cls || "");
+  div.innerHTML = '<span class="step-icon">' + icon + '</span><span>' + escapeHtml(text) + '</span>';
   chatBox.appendChild(div);
+  chatBox.scrollTop = chatBox.scrollHeight;
+  return div;
+}}
+
+function updateProgressStep(div, icon, text, cls, preview) {{
+  div.className = "progress-step " + (cls || "");
+  let html = '<span class="step-icon">' + icon + '</span><span>' + escapeHtml(text) + '</span>';
+  if (preview) {{
+    const id = "detail-" + Date.now();
+    html += '<span class="step-toggle" onclick="toggleDetail(\'' + id + '\')">详情</span>';
+    html += '<div class="step-detail" id="' + id + '">' + escapeHtml(preview) + '</div>';
+  }}
+  div.innerHTML = html;
   chatBox.scrollTop = chatBox.scrollHeight;
 }}
 
-function hideTyping() {{
-  const el = document.getElementById("typing-indicator");
-  if (el) el.remove();
+function toggleDetail(id) {{
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle("open");
 }}
 
-function setInputEnabled(enabled) {{
-  chatInput.disabled = !enabled;
-  sendBtn.disabled = !enabled;
+function setRunning(running) {{
+  chatInput.disabled = running;
+  sendBtn.disabled = running;
+  sendBtn.style.display = running ? "none" : "";
+  stopBtn.classList.toggle("visible", running);
 }}
 
-// --- Toggle sidebar sections ---
 function toggleSection(h3) {{
   h3.classList.toggle("open");
 }}
 
-// --- Send ---
+// --- Cancel ---
+async function cancelTask() {{
+  try {{
+    await fetch("/api/chat/cancel?session_id=" + encodeURIComponent(sessionId), {{method: "POST"}});
+  }} catch (_) {{}}
+}}
+
+// --- Send with streaming ---
 async function sendMessage() {{
   const text = chatInput.value.trim();
   if (!text) return;
   chatInput.value = "";
   addMsg("user", text);
-  setInputEnabled(false);
-  showTyping();
+  setRunning(true);
+
+  // Map of step number → progress DOM element for live updates
+  const stepElements = {{}};
 
   try {{
-    const res = await fetch("/api/chat", {{
+    const res = await fetch("/api/chat/stream", {{
       method: "POST",
       headers: {{"Content-Type": "application/json"}},
       body: JSON.stringify({{
@@ -370,26 +419,100 @@ async function sendMessage() {{
         session_id: sessionId,
       }}),
     }});
-    hideTyping();
-    const data = await res.json();
-    if (data.error) {{
-      const errDiv = document.createElement("div");
-      errDiv.className = "msg error";
-      errDiv.textContent = "⚠️ " + data.error;
-      chatBox.appendChild(errDiv);
-    }} else {{
-      addToolBadges(data.tool_calls);
-      addMsg("bot", data.reply);
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {{
+      const {{ done, value }} = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, {{ stream: true }});
+
+      // Parse SSE events from buffer
+      const lines = buffer.split("\\n");
+      buffer = lines.pop() || "";
+
+      let eventType = null;
+      let dataStr = "";
+
+      for (const line of lines) {{
+        if (line.startsWith("event: ")) {{
+          eventType = line.slice(7).trim();
+        }} else if (line.startsWith("data: ")) {{
+          dataStr = line.slice(6);
+          if (eventType && dataStr) {{
+            try {{
+              const data = JSON.parse(dataStr);
+              handleSSE(eventType, data, stepElements);
+            }} catch (_) {{}}
+          }}
+          eventType = null;
+          dataStr = "";
+        }}
+      }}
     }}
   }} catch (e) {{
-    hideTyping();
     const errDiv = document.createElement("div");
     errDiv.className = "msg error";
-    errDiv.textContent = "⚠️ 请求失败: " + e.message;
+    errDiv.textContent = "⚠️ 连接失败: " + e.message;
     chatBox.appendChild(errDiv);
   }} finally {{
-    setInputEnabled(true);
+    setRunning(false);
     chatInput.focus();
+  }}
+}}
+
+function handleSSE(event, data, stepElements) {{
+  switch (event) {{
+    case "thinking":
+      if (!stepElements[data.step]) {{
+        stepElements[data.step] = addProgressStep("🤔", "第 " + data.step + " 步：思考中…", "running");
+      }}
+      break;
+
+    case "tool_start":
+      if (stepElements[data.step]) {{
+        updateProgressStep(stepElements[data.step], "🔧", "调用 " + data.tool + "…", "running");
+      }} else {{
+        stepElements[data.step] = addProgressStep("🔧", "调用 " + data.tool + "…", "running");
+      }}
+      break;
+
+    case "tool_done":
+      if (stepElements[data.step]) {{
+        const icon = data.ok ? "✅" : "❌";
+        const label = data.ok ? (data.tool + " 完成") : (data.tool + " 失败");
+        updateProgressStep(stepElements[data.step], icon, label, data.ok ? "done" : "failed", data.preview);
+      }}
+      break;
+
+    case "reply":
+      // Remove any lingering "thinking" step
+      Object.values(stepElements).forEach(el => {{
+        if (el.classList.contains("running")) el.remove();
+      }});
+      addMsg("bot", data.reply);
+      break;
+
+    case "error":
+      const errDiv = document.createElement("div");
+      errDiv.className = "msg error";
+      errDiv.textContent = "⚠️ " + (data.error || "未知错误");
+      chatBox.appendChild(errDiv);
+      chatBox.scrollTop = chatBox.scrollHeight;
+      break;
+
+    case "cancelled":
+      const cancelDiv = document.createElement("div");
+      cancelDiv.className = "msg system";
+      cancelDiv.textContent = "⏹ " + (data.message || "已取消");
+      chatBox.appendChild(cancelDiv);
+      chatBox.scrollTop = chatBox.scrollHeight;
+      break;
+
+    case "done":
+      break;
   }}
 }}
 
@@ -404,7 +527,6 @@ async function resetChat() {{
   }} catch (_) {{}}
   sessionId = "web-" + Date.now();
   chatBox.innerHTML = "";
-  // Re-add welcome
   chatBox.innerHTML = `
     <div class="welcome" id="welcome">
       <h2>👋 你好！我是本地 AI 助手</h2>
@@ -419,7 +541,6 @@ async function resetChat() {{
     </div>`;
 }}
 
-// Enter key sends
 chatInput.addEventListener("keydown", (e) => {{
   if (e.key === "Enter" && !e.shiftKey && !sendBtn.disabled) {{
     e.preventDefault();
@@ -429,7 +550,6 @@ chatInput.addEventListener("keydown", (e) => {{
 
 // --- Boot: populate status & models ---
 (async () => {{
-  // System info
   try {{
     const r = await fetch("/tool/get_system_info", {{method:"POST", headers:{{"Content-Type":"application/json"}}, body:"{{}}"}});
     const info = await r.json();
@@ -439,7 +559,6 @@ chatInput.addEventListener("keydown", (e) => {{
     }}
   }} catch (_) {{}}
 
-  // Models
   try {{
     const r = await fetch("/api/chat/models");
     const data = await r.json();
