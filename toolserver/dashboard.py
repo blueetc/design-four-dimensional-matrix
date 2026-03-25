@@ -974,6 +974,7 @@ document.querySelectorAll(".ref-panel h3").forEach(h3 => {{
 (async () => {{
   try {{
     const r = await fetch("/tool/get_system_info", {{method:"POST", headers:{{"Content-Type":"application/json"}}, body:"{{}}"}});
+    if (!r.ok) throw new Error("HTTP " + r.status);
     const info = await r.json();
     if (info.ok) {{
       document.getElementById("sys-os").textContent = info.result.platform || info.result.system;
@@ -983,6 +984,7 @@ document.querySelectorAll(".ref-panel h3").forEach(h3 => {{
 
   try {{
     const r = await fetch("/api/chat/models");
+    if (!r.ok) throw new Error("HTTP " + r.status);
     const data = await r.json();
     const sel = document.getElementById("model-select");
     const modelListEl = document.getElementById("model-list");
