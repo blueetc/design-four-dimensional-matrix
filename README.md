@@ -43,6 +43,11 @@ pip install -e .
 uvicorn toolserver.server:app --host 127.0.0.1 --port 7331
 ```
 
+Open **http://127.0.0.1:7331/** in your browser to see the interactive
+dashboard, which shows server status, available models, all tools, and a
+"Try It" panel for testing tools directly.  The Swagger API docs are also
+available at **http://127.0.0.1:7331/docs**.
+
 ### 3. Run the Agent
 
 ```bash

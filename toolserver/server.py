@@ -8,6 +8,7 @@ import platform
 import shutil
 
 from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
 from .audit import append_audit
@@ -25,6 +26,7 @@ from .policy import (
 from .shell import run_command as _run
 from .visualizer import save_3d_html
 from .wide_table import create_wide_table, design_wide_table, incremental_etl
+from .dashboard import render_dashboard
 
 # Ollama model discovery
 from agent.ollama_client import list_models as _list_ollama_models
@@ -35,6 +37,16 @@ AUDIT_LOG = os.path.join(POLICY["workspace_root"], "audit.jsonl")
 DB = SQLiteDB(os.path.join(POLICY["workspace_root"], "agent.sqlite3"))
 
 app = FastAPI(title="Ollama Local Agent – Tool Server")
+
+
+# ---------------------------------------------------------------------------
+# Dashboard (root path)
+# ---------------------------------------------------------------------------
+
+@app.get("/", response_class=HTMLResponse)
+def dashboard() -> str:
+    """Serve the interactive dashboard at the root URL."""
+    return render_dashboard()
 
 
 # ---------------------------------------------------------------------------
