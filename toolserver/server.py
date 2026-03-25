@@ -53,9 +53,12 @@ def dashboard() -> str:
 # Chat API – natural-language conversation with the agent
 # ---------------------------------------------------------------------------
 
+import threading
+
 # In-memory session store: session_id → messages list.
 # Allows multi-turn conversations from the web UI.
 _CHAT_SESSIONS: dict[str, list[dict]] = {}
+_CHAT_LOCK = threading.Lock()
 
 # Maximum sessions kept in memory to prevent unbounded growth.
 _MAX_SESSIONS = 64
@@ -92,15 +95,16 @@ def chat_endpoint(inp: ChatIn) -> ChatOut:
 
     model = inp.model or os.environ.get("OLLAMA_MODEL", "qwen2.5:7b")
 
-    # Retrieve or create session history.
-    if inp.session_id not in _CHAT_SESSIONS:
-        # Evict oldest session if at capacity.
-        if len(_CHAT_SESSIONS) >= _MAX_SESSIONS:
-            oldest = next(iter(_CHAT_SESSIONS))
-            del _CHAT_SESSIONS[oldest]
-        _CHAT_SESSIONS[inp.session_id] = _init_messages()
+    # Retrieve or create session history (thread-safe).
+    with _CHAT_LOCK:
+        if inp.session_id not in _CHAT_SESSIONS:
+            # Evict oldest session if at capacity.
+            if len(_CHAT_SESSIONS) >= _MAX_SESSIONS:
+                oldest = next(iter(_CHAT_SESSIONS))
+                del _CHAT_SESSIONS[oldest]
+            _CHAT_SESSIONS[inp.session_id] = _init_messages()
+        messages = _CHAT_SESSIONS[inp.session_id]
 
-    messages = _CHAT_SESSIONS[inp.session_id]
     messages.append({"role": "user", "content": inp.message})
 
     tool_calls: list[dict] = []
@@ -179,8 +183,9 @@ def chat_models() -> dict:
 @app.post("/api/chat/reset")
 def chat_reset(session_id: str = "default") -> dict:
     """Clear conversation history for a session."""
-    if session_id in _CHAT_SESSIONS:
-        del _CHAT_SESSIONS[session_id]
+    with _CHAT_LOCK:
+        if session_id in _CHAT_SESSIONS:
+            del _CHAT_SESSIONS[session_id]
     return {"ok": True, "session_id": session_id}
 
 
