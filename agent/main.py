@@ -8,6 +8,7 @@ Multi-model support:
 - ``/model <name>``      — switch the active model mid-conversation
 - ``/ask <model> <msg>`` — one-shot question to a different model
 - ``/panel <msg>``       — ask all (or selected) models the same question
+- ``/orch <task>``       — orchestrate: director model delegates to workers
 """
 
 from __future__ import annotations
@@ -18,7 +19,7 @@ import sys
 import requests
 
 from .ollama_client import list_models, ollama_chat
-from .prompts import DEV_PROMPT, SYSTEM_PROMPT
+from .prompts import DEV_PROMPT, ORCHESTRATOR_PROMPT, SYSTEM_PROMPT
 
 TOOLSERVER = "http://127.0.0.1:7331"
 
@@ -188,6 +189,171 @@ def run(
 
 
 # ---------------------------------------------------------------------------
+# Multi-model orchestration
+# ---------------------------------------------------------------------------
+
+MAX_ORCH_ROUNDS = 15
+
+
+def _try_parse_orchestrator_action(text: str) -> dict | None:
+    """Parse an orchestrator JSON action from *text*.
+
+    Valid actions have an ``"action"`` key with value
+    ``"delegate"``, ``"broadcast"``, or ``"finish"``.
+    """
+    text = text.strip()
+    if not (text.startswith("{") and text.endswith("}")):
+        return None
+    try:
+        obj = json.loads(text)
+    except (json.JSONDecodeError, ValueError):
+        return None
+    if isinstance(obj, dict) and "action" in obj:
+        return obj
+    return None
+
+
+def run_orchestrate(
+    task: str,
+    director_model: str = "qwen2.5:7b",
+    worker_models: list[str] | None = None,
+    max_rounds: int = MAX_ORCH_ROUNDS,
+) -> dict:
+    """Run multi-model orchestration: a director delegates to workers.
+
+    Parameters
+    ----------
+    task:
+        The high-level task from the user.
+    director_model:
+        Ollama model used as the orchestrator / director.
+    worker_models:
+        List of worker model names.  Auto-discovered if *None*.
+    max_rounds:
+        Maximum delegate/broadcast rounds before forcing finish.
+
+    Returns
+    -------
+    dict
+        ``{"summary": "...", "rounds": [...], "round_count": N}``
+        where each round records the director action and worker responses.
+    """
+    if worker_models is None:
+        available = list_models()
+        worker_models = [m["name"] for m in available] if available else [director_model]
+
+    model_list_str = "\n".join(f"- {m}" for m in worker_models)
+    orch_prompt = ORCHESTRATOR_PROMPT.format(
+        available_models=model_list_str,
+        max_rounds=max_rounds,
+    )
+
+    messages: list[dict] = [{"role": "system", "content": orch_prompt}]
+    messages.append({"role": "user", "content": f"用户任务：{task}"})
+
+    rounds: list[dict] = []
+
+    for round_idx in range(max_rounds):
+        resp = ollama_chat(model=director_model, messages=messages)
+        director_text: str = resp["message"]["content"].strip()
+        messages.append({"role": "assistant", "content": director_text})
+
+        action = _try_parse_orchestrator_action(director_text)
+
+        if action is None:
+            # Director gave plain text — treat as implicit finish
+            print(f"[指挥官] {director_text}")
+            rounds.append({"action": "text", "content": director_text})
+            return {
+                "summary": director_text,
+                "rounds": rounds,
+                "round_count": round_idx + 1,
+            }
+
+        act_type = action.get("action", "")
+
+        # ---- finish ----
+        if act_type == "finish":
+            summary = action.get("summary", "（无汇总）")
+            print(f"\n=== 编排完成（{round_idx + 1} 轮） ===")
+            print(summary)
+            rounds.append({"action": "finish", "summary": summary})
+            return {
+                "summary": summary,
+                "rounds": rounds,
+                "round_count": round_idx + 1,
+            }
+
+        # ---- delegate ----
+        if act_type == "delegate":
+            target = action.get("model", worker_models[0])
+            subtask = action.get("subtask", "")
+            print(f"[指挥官 → {target}] {subtask}")
+
+            try:
+                worker_resp = ollama_chat(
+                    model=target,
+                    messages=[{"role": "user", "content": subtask}],
+                )
+                worker_text = worker_resp["message"]["content"].strip()
+            except Exception as exc:
+                worker_text = f"(工作模型 {target} 调用失败: {exc})"
+
+            print(f"[{target}] {worker_text[:200]}{'...' if len(worker_text) > 200 else ''}\n")
+            feedback = f"[worker:{target}] {worker_text}"
+            messages.append({"role": "user", "content": feedback})
+            rounds.append({
+                "action": "delegate",
+                "model": target,
+                "subtask": subtask,
+                "response": worker_text,
+            })
+            continue
+
+        # ---- broadcast ----
+        if act_type == "broadcast":
+            question = action.get("question", "")
+            print(f"[指挥官 → 广播] {question}")
+            broadcast_results: list[dict] = []
+            all_feedback: list[str] = []
+
+            for wm in worker_models:
+                try:
+                    worker_resp = ollama_chat(
+                        model=wm,
+                        messages=[{"role": "user", "content": question}],
+                    )
+                    worker_text = worker_resp["message"]["content"].strip()
+                except Exception as exc:
+                    worker_text = f"(工作模型 {wm} 调用失败: {exc})"
+                print(f"  [{wm}] {worker_text[:200]}{'...' if len(worker_text) > 200 else ''}")
+                broadcast_results.append({"model": wm, "response": worker_text})
+                all_feedback.append(f"[worker:{wm}] {worker_text}")
+
+            print()
+            feedback = "\n".join(all_feedback)
+            messages.append({"role": "user", "content": feedback})
+            rounds.append({
+                "action": "broadcast",
+                "question": question,
+                "responses": broadcast_results,
+            })
+            continue
+
+        # Unknown action — treat as plain text
+        print(f"[指挥官] {director_text}")
+        rounds.append({"action": "unknown", "content": director_text})
+
+    # Exhausted rounds
+    print(f"\n=== 编排结束（达到最大 {max_rounds} 轮） ===")
+    return {
+        "summary": "(达到最大轮数，未能完成汇总)",
+        "rounds": rounds,
+        "round_count": max_rounds,
+    }
+
+
+# ---------------------------------------------------------------------------
 # Slash-command dispatcher (used by the interactive REPL)
 # ---------------------------------------------------------------------------
 
@@ -277,6 +443,25 @@ def _handle_slash_command(
             print(f"已移除 {rest} → {panel_models}")
         return active_model, messages, panel_models, True
 
+    # /orch <task> – multi-model orchestration
+    if verb == "/orch":
+        if not rest:
+            print("用法: /orch <任务描述>")
+            return active_model, messages, panel_models, True
+        workers = _resolve_panel_models(panel_models, active_model)
+        result = run_orchestrate(
+            task=rest,
+            director_model=active_model,
+            worker_models=workers,
+        )
+        # Record the orchestration result in the shared conversation
+        messages.append({"role": "user", "content": f"[orch] {rest}"})
+        messages.append({
+            "role": "assistant",
+            "content": f"[编排结果 ({result['round_count']}轮)] {result['summary']}",
+        })
+        return active_model, messages, panel_models, True
+
     # /help
     if verb == "/help":
         print(
@@ -287,6 +472,7 @@ def _handle_slash_command(
             "  /panel <问题>        向所有 Panel 模型提问\n"
             "  /panel+ <模型>       添加模型到 Panel\n"
             "  /panel- <模型>       从 Panel 移除模型\n"
+            "  /orch <任务>         多模型编排（指挥官模式）\n"
             "  /help                显示此帮助\n"
             "  exit/quit/q/退出     退出"
         )
@@ -314,6 +500,7 @@ def run_interactive(model: str = "qwen2.5:7b") -> None:
     - ``/panel <msg>``         — ask all panel models the same question
     - ``/panel+ <model>``      — add a model to the panel
     - ``/panel- <model>``      — remove a model from the panel
+    - ``/orch <task>``         — orchestrate: director delegates to workers
     - ``/help``                — show available commands
 
     Type ``exit``, ``quit``, ``q``, ``bye``, ``退出``, or ``结束`` to

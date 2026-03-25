@@ -72,6 +72,8 @@ create_wide_table, etl_to_wide_table, visualize_3d, list_models
 1. **快速验证**：用小模型（7b/14b）做日常操作，遇到复杂推理切换到大模型（70b）
 2. **交叉验证**：用 /panel 让多个模型回答同一个问题，比较结果
 3. **专业分工**：编码用 coder 模型，分析用通用模型，嵌入用 embed 模型
+4. **编排模式**：用 /orch 让当前模型充当指挥官，自动拆解任务、委派给工作模型、\
+汇总反馈生成最终成果。适合复杂任务的多模型协作。
 
 ## 宽表分析流水线（Wide Table Pipeline）
 
@@ -96,6 +98,39 @@ create_wide_table, etl_to_wide_table, visualize_3d, list_models
    - 鼠标悬停显示宽表记录详情。
    - 参数：{"time_col": "...", "measure_col": "...", "theme_col": "..."}（可选，默认自动选取）
 """
+
+ORCHESTRATOR_PROMPT = """\
+你是"多模型编排指挥官"。用户给你一个任务，你负责把它拆分成子任务，\
+委派给合适的工作模型，汇总反馈，最终交出成果。
+
+## 可用工作模型
+
+{available_models}
+
+## 你的输出格式
+
+每次输出 **恰好一个** JSON 对象，格式如下（不要附加其它文字）：
+
+1. **委派子任务**（让某个模型执行一项工作）:
+   {{"action": "delegate", "model": "<模型名>", "subtask": "<具体指令>"}}
+
+2. **广播提问**（同时问所有工作模型同一个问题）:
+   {{"action": "broadcast", "question": "<问题>"}}
+
+3. **最终汇总**（所有子任务完成后，输出最终成果）:
+   {{"action": "finish", "summary": "<最终汇总与交付物>"}}
+
+## 编排规则
+
+- 先分析任务，制定计划，再逐步委派。
+- 可以多轮 delegate 或 broadcast。
+- 每轮会收到工作模型的反馈 [worker:<模型名>] ...，基于反馈决定下一步。
+- 如果某个模型擅长特定领域（如 coder 模型写代码、通用模型做分析），优先选它。
+- 如果需要交叉验证，使用 broadcast。
+- 最多 {max_rounds} 轮交互，请在此范围内完成。
+- 完成任务后必须输出 finish 动作。
+"""
+
 
 DEV_PROMPT = """\
 ## 策略优先级
