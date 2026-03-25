@@ -328,6 +328,8 @@ def chat_stream(inp: ChatIn) -> StreamingResponse:
                 })
         except OllamaConnectionError as exc:
             yield _sse("error", {"error": str(exc)})
+        except Exception as exc:
+            yield _sse("error", {"error": str(exc)})
 
         yield _sse("done", {})
 

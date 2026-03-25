@@ -341,7 +341,7 @@ class TestDashboardEndpoint:
     def test_chat_stream_endpoint_exists(self) -> None:
         """Verify the streaming endpoint responds (even with Ollama down)."""
         with mock.patch(
-            "toolserver.server.ollama_chat",
+            "agent.ollama_client.ollama_chat",
             side_effect=Exception("test skip"),
         ):
             resp = self.client.post(
