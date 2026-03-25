@@ -1,8 +1,10 @@
 """Self-contained HTML dashboard for the tool server.
 
 The page is returned as a single string so we do not need any static-file
-serving infrastructure.  JavaScript on the page calls the existing JSON
-API endpoints to populate live data (system info, available models, etc.).
+serving infrastructure.  The primary UI element is a **chat panel** where
+users can talk to the Ollama agent in natural language.  Status cards,
+available models, and the tool catalogue are kept as collapsible
+reference sections below the chat.
 """
 
 from __future__ import annotations
@@ -42,226 +44,429 @@ def render_dashboard() -> str:
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Ollama Local Agent – Tool Server</title>
+<title>Ollama Local Agent</title>
 <style>
   :root {{
     --bg: #0f1117; --card: #1a1d27; --border: #2d3140;
     --text: #e0e0e0; --muted: #8b8fa3; --accent: #6c8cff;
     --green: #2ecc71; --red: #e74c3c; --yellow: #f1c40f;
+    --chat-user: #2a2d3a; --chat-bot: #1e2230;
   }}
   * {{ box-sizing: border-box; margin: 0; padding: 0; }}
   body {{
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     background: var(--bg); color: var(--text); line-height: 1.6;
-    padding: 0 1rem;
+    padding: 0; height: 100vh; display: flex; flex-direction: column;
   }}
-  .container {{ max-width: 960px; margin: 0 auto; padding: 2rem 0; }}
-  h1 {{ font-size: 1.8rem; margin-bottom: 0.25rem; }}
-  h1 span {{ color: var(--accent); }}
-  .subtitle {{ color: var(--muted); margin-bottom: 2rem; font-size: 0.95rem; }}
-  .cards {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }}
-  .card {{
-    background: var(--card); border: 1px solid var(--border);
-    border-radius: 10px; padding: 1.2rem;
+
+  /* --- Header --- */
+  header {{
+    background: var(--card); border-bottom: 1px solid var(--border);
+    padding: 0.75rem 1.5rem; display: flex; align-items: center;
+    justify-content: space-between; flex-shrink: 0;
   }}
-  .card h3 {{ font-size: 0.85rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }}
-  .card .value {{ font-size: 1.4rem; font-weight: 600; }}
+  header h1 {{ font-size: 1.2rem; }}
+  header h1 span {{ color: var(--accent); }}
+  .header-right {{ display: flex; align-items: center; gap: 1rem; font-size: 0.85rem; }}
+  .header-right select {{
+    background: var(--bg); color: var(--text); border: 1px solid var(--border);
+    border-radius: 6px; padding: 0.3rem 0.5rem; font-size: 0.85rem;
+  }}
+  .header-right .status {{ display: flex; align-items: center; gap: 0.3rem; }}
   .status-dot {{
-    display: inline-block; width: 10px; height: 10px;
-    border-radius: 50%; margin-right: 6px; vertical-align: middle;
+    display: inline-block; width: 8px; height: 8px;
+    border-radius: 50%; vertical-align: middle;
   }}
   .status-dot.ok {{ background: var(--green); }}
   .status-dot.err {{ background: var(--red); }}
   .status-dot.loading {{ background: var(--yellow); animation: pulse 1s infinite; }}
   @keyframes pulse {{ 0%,100%{{opacity:1}} 50%{{opacity:0.4}} }}
 
-  section {{ margin-bottom: 2rem; }}
-  section h2 {{ font-size: 1.2rem; margin-bottom: 0.75rem; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; }}
+  /* --- Main area: chat + optional sidebar --- */
+  .main {{ flex: 1; display: flex; overflow: hidden; }}
+  .chat-area {{ flex: 1; display: flex; flex-direction: column; min-width: 0; }}
 
-  table {{ width: 100%; border-collapse: collapse; font-size: 0.9rem; }}
-  th, td {{ text-align: left; padding: 0.55rem 0.75rem; border-bottom: 1px solid var(--border); }}
-  th {{ color: var(--muted); font-weight: 500; font-size: 0.8rem; text-transform: uppercase; }}
-  .tool-name {{ font-weight: 600; white-space: nowrap; }}
-  .tool-endpoint code {{ color: var(--accent); font-size: 0.85rem; }}
+  /* --- Chat messages --- */
+  .chat-messages {{
+    flex: 1; overflow-y: auto; padding: 1rem 1.5rem;
+    display: flex; flex-direction: column; gap: 0.75rem;
+  }}
+  .msg {{
+    max-width: 85%; padding: 0.75rem 1rem; border-radius: 12px;
+    font-size: 0.92rem; line-height: 1.55; white-space: pre-wrap;
+    word-break: break-word;
+  }}
+  .msg.user {{
+    align-self: flex-end; background: var(--chat-user);
+    border-bottom-right-radius: 4px;
+  }}
+  .msg.bot {{
+    align-self: flex-start; background: var(--chat-bot);
+    border: 1px solid var(--border); border-bottom-left-radius: 4px;
+  }}
+  .msg.bot .tool-badge {{
+    display: inline-block; background: var(--accent); color: #fff;
+    font-size: 0.72rem; padding: 0.1rem 0.45rem; border-radius: 4px;
+    margin-right: 0.3rem; font-weight: 600; opacity: 0.85;
+  }}
+  .msg.system {{
+    align-self: center; color: var(--muted); font-size: 0.82rem;
+    background: transparent; padding: 0.3rem;
+  }}
+  .msg.error {{
+    align-self: center; color: var(--red); font-size: 0.85rem;
+    background: rgba(231,76,60,0.1); border: 1px solid rgba(231,76,60,0.3);
+    border-radius: 8px; padding: 0.6rem 1rem;
+  }}
+  .typing {{ color: var(--muted); font-style: italic; font-size: 0.85rem; padding: 0.5rem 1rem; }}
 
-  /* Try-it panel */
-  .try-panel {{
-    background: var(--card); border: 1px solid var(--border);
-    border-radius: 10px; padding: 1.2rem;
+  /* --- Input bar --- */
+  .chat-input {{
+    border-top: 1px solid var(--border); background: var(--card);
+    padding: 0.75rem 1.5rem; display: flex; gap: 0.5rem; flex-shrink: 0;
   }}
-  .try-panel select, .try-panel textarea, .try-panel button {{
-    font-family: inherit; font-size: 0.9rem;
-    background: var(--bg); color: var(--text); border: 1px solid var(--border);
-    border-radius: 6px; padding: 0.5rem 0.75rem; width: 100%;
+  .chat-input input {{
+    flex: 1; background: var(--bg); color: var(--text);
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 0.6rem 1rem; font-size: 0.95rem; outline: none;
   }}
-  .try-panel select {{ margin-bottom: 0.75rem; cursor: pointer; }}
-  .try-panel textarea {{ min-height: 80px; resize: vertical; margin-bottom: 0.75rem; }}
-  .try-panel button {{
+  .chat-input input:focus {{ border-color: var(--accent); }}
+  .chat-input button {{
     background: var(--accent); color: #fff; border: none;
-    cursor: pointer; font-weight: 600; padding: 0.6rem;
+    border-radius: 8px; padding: 0.6rem 1.2rem; font-size: 0.95rem;
+    cursor: pointer; font-weight: 600; white-space: nowrap;
     transition: opacity 0.15s;
   }}
-  .try-panel button:hover {{ opacity: 0.85; }}
-  .try-panel button:disabled {{ opacity: 0.4; cursor: not-allowed; }}
-  pre.result {{
+  .chat-input button:hover {{ opacity: 0.85; }}
+  .chat-input button:disabled {{ opacity: 0.4; cursor: not-allowed; }}
+  .chat-input .btn-secondary {{
+    background: transparent; color: var(--muted); border: 1px solid var(--border);
+    font-weight: 400; padding: 0.6rem 0.8rem;
+  }}
+
+  /* --- Reference panel (collapsible sidebar on wide screens) --- */
+  .ref-panel {{
+    width: 340px; background: var(--card); border-left: 1px solid var(--border);
+    overflow-y: auto; flex-shrink: 0; padding: 1rem; font-size: 0.85rem;
+  }}
+  @media (max-width: 800px) {{
+    .ref-panel {{ display: none; }}
+  }}
+  .ref-panel h3 {{
+    font-size: 0.8rem; color: var(--muted); text-transform: uppercase;
+    letter-spacing: 0.04em; margin-bottom: 0.5rem; margin-top: 1rem;
+    cursor: pointer; user-select: none;
+  }}
+  .ref-panel h3:first-child {{ margin-top: 0; }}
+  .ref-panel h3::before {{ content: "▸ "; }}
+  .ref-panel h3.open::before {{ content: "▾ "; }}
+  .ref-panel .section-body {{ display: none; }}
+  .ref-panel h3.open + .section-body {{ display: block; }}
+
+  .cards {{ display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem; }}
+  .card {{
     background: var(--bg); border: 1px solid var(--border);
-    border-radius: 6px; padding: 0.75rem; margin-top: 0.75rem;
-    max-height: 320px; overflow: auto; font-size: 0.82rem;
-    white-space: pre-wrap; word-break: break-all;
+    border-radius: 8px; padding: 0.6rem 0.8rem;
   }}
+  .card .label {{ font-size: 0.72rem; color: var(--muted); text-transform: uppercase; }}
+  .card .value {{ font-size: 0.95rem; font-weight: 600; }}
 
-  .model-list {{ display: flex; flex-wrap: wrap; gap: 0.5rem; }}
+  .model-list {{ display: flex; flex-wrap: wrap; gap: 0.4rem; }}
   .model-tag {{
-    background: var(--card); border: 1px solid var(--border);
-    border-radius: 6px; padding: 0.3rem 0.7rem; font-size: 0.85rem;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 5px; padding: 0.15rem 0.5rem; font-size: 0.8rem;
   }}
 
-  .links {{ display: flex; gap: 1rem; margin-top: 0.5rem; }}
-  .links a {{
-    color: var(--accent); text-decoration: none; font-size: 0.9rem;
-  }}
+  table {{ width: 100%; border-collapse: collapse; font-size: 0.8rem; }}
+  th, td {{ text-align: left; padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--border); }}
+  th {{ color: var(--muted); font-weight: 500; font-size: 0.72rem; text-transform: uppercase; }}
+  .tool-name {{ font-weight: 600; white-space: nowrap; }}
+  .tool-endpoint code {{ color: var(--accent); font-size: 0.78rem; }}
+
+  .links {{ display: flex; gap: 0.75rem; margin-top: 0.5rem; }}
+  .links a {{ color: var(--accent); text-decoration: none; font-size: 0.82rem; }}
   .links a:hover {{ text-decoration: underline; }}
 
-  footer {{ text-align: center; color: var(--muted); font-size: 0.8rem; padding: 1rem 0; border-top: 1px solid var(--border); }}
+  /* Welcome message */
+  .welcome {{ text-align: center; padding: 2rem 1rem; color: var(--muted); }}
+  .welcome h2 {{ font-size: 1.3rem; color: var(--text); margin-bottom: 0.5rem; }}
+  .welcome p {{ font-size: 0.9rem; max-width: 500px; margin: 0 auto 1rem; }}
+  .examples {{ display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; }}
+  .examples button {{
+    background: var(--card); color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; padding: 0.5rem 1rem; font-size: 0.85rem;
+    cursor: pointer; transition: border-color 0.15s;
+  }}
+  .examples button:hover {{ border-color: var(--accent); }}
 </style>
 </head>
 <body>
-<div class="container">
 
-  <h1>🤖 <span>Ollama Local Agent</span> – Tool Server</h1>
-  <p class="subtitle">本地自动化代理的策略化工具服务 &nbsp;|&nbsp; 所有操作经安全策略审计</p>
-  <div class="links">
-    <a href="/docs">📖 Swagger UI (API 文档)</a>
-    <a href="/openapi.json">📄 OpenAPI Schema</a>
+<!-- Header -->
+<header>
+  <h1>🤖 <span>Ollama Local Agent</span></h1>
+  <div class="header-right">
+    <div class="status" id="status-bar">
+      <span class="status-dot loading"></span>
+      <span>连接中…</span>
+    </div>
+    <select id="model-select" title="选择模型">
+      <option value="">加载中…</option>
+    </select>
+  </div>
+</header>
+
+<!-- Main layout -->
+<div class="main">
+  <!-- Chat area -->
+  <div class="chat-area">
+    <div class="chat-messages" id="chat-messages">
+      <div class="welcome" id="welcome">
+        <h2>👋 你好！我是本地 AI 助手</h2>
+        <p>我可以帮你执行命令、读写文件、查询数据库、分析数据——所有操作都在本地安全执行。</p>
+        <p style="font-size:0.82rem; color:var(--muted)">试试下面的问题，或直接输入你的需求：</p>
+        <div class="examples">
+          <button onclick="sendExample(this)">我的系统是什么环境？</button>
+          <button onclick="sendExample(this)">工作空间里有哪些文件？</button>
+          <button onclick="sendExample(this)">查看数据库结构</button>
+          <button onclick="sendExample(this)">本地有哪些模型可用？</button>
+        </div>
+      </div>
+    </div>
+    <div class="chat-input">
+      <input type="text" id="chat-input" placeholder="输入消息… (Enter 发送)" autocomplete="off" />
+      <button id="send-btn" onclick="sendMessage()">发送</button>
+      <button class="btn-secondary" onclick="resetChat()" title="清空对话">🗑</button>
+    </div>
   </div>
 
-  <!-- Status cards -->
-  <section style="margin-top:1.5rem">
-    <h2>服务状态</h2>
-    <div class="cards">
-      <div class="card">
-        <h3>Tool Server</h3>
-        <div class="value"><span class="status-dot ok"></span>运行中</div>
-      </div>
-      <div class="card">
-        <h3>Ollama</h3>
-        <div class="value" id="ollama-status"><span class="status-dot loading"></span>检测中…</div>
-      </div>
-      <div class="card">
-        <h3>操作系统</h3>
-        <div class="value" id="sys-os">—</div>
-      </div>
-      <div class="card">
-        <h3>工作空间</h3>
-        <div class="value" id="sys-workspace" style="font-size:0.95rem;word-break:break-all">—</div>
+  <!-- Reference sidebar -->
+  <div class="ref-panel" id="ref-panel">
+    <h3 class="open" onclick="toggleSection(this)">服务状态</h3>
+    <div class="section-body">
+      <div class="cards">
+        <div class="card"><div class="label">Server</div><div class="value"><span class="status-dot ok"></span> 运行中</div></div>
+        <div class="card"><div class="label">Ollama</div><div class="value" id="ollama-status"><span class="status-dot loading"></span> …</div></div>
+        <div class="card"><div class="label">系统</div><div class="value" id="sys-os">—</div></div>
+        <div class="card"><div class="label">工作空间</div><div class="value" id="sys-workspace" style="font-size:0.75rem;word-break:break-all">—</div></div>
       </div>
     </div>
-  </section>
 
-  <!-- Models -->
-  <section>
-    <h2>可用模型</h2>
-    <div class="model-list" id="model-list">
-      <span class="model-tag" style="color:var(--muted)">加载中…</span>
+    <h3 onclick="toggleSection(this)">可用模型</h3>
+    <div class="section-body">
+      <div class="model-list" id="model-list">
+        <span class="model-tag" style="color:var(--muted)">加载中…</span>
+      </div>
     </div>
-  </section>
 
-  <!-- Tool table -->
-  <section>
-    <h2>可用工具 ({len(TOOLS)})</h2>
-    <div style="overflow-x:auto">
-    <table>
-      <thead><tr><th>工具名</th><th>端点</th><th>说明</th></tr></thead>
-      <tbody>
-        {tool_rows}
-      </tbody>
-    </table>
+    <h3 onclick="toggleSection(this)">可用工具 ({len(TOOLS)})</h3>
+    <div class="section-body">
+      <table>
+        <thead><tr><th>工具</th><th>说明</th></tr></thead>
+        <tbody>
+          {"".join(f'<tr><td class="tool-name">{n}</td><td>{d}</td></tr>' for n, _, d in TOOLS)}
+        </tbody>
+      </table>
     </div>
-  </section>
 
-  <!-- Try-it -->
-  <section>
-    <h2>🔧 在线试用</h2>
-    <div class="try-panel">
-      <select id="tool-select">
-        <option value="/tool/get_system_info">get_system_info</option>
-        <option value="/tool/list_models">list_models</option>
-        <option value="/tool/db_schema">db_schema</option>
-        <option value="/tool/analyze_fields">analyze_fields</option>
-        <option value="/tool/list_dir">list_dir</option>
-        <option value="/tool/read_file">read_file</option>
-        <option value="/tool/run_command">run_command</option>
-      </select>
-      <textarea id="tool-body" placeholder='请求体 JSON（如无参数留空 {{}}）'>{{}}</textarea>
-      <button id="tool-run" onclick="runTool()">▶ 发送请求</button>
-      <pre class="result" id="tool-result">结果将显示在此处</pre>
+    <h3 onclick="toggleSection(this)">链接</h3>
+    <div class="section-body">
+      <div class="links">
+        <a href="/docs">📖 API 文档</a>
+        <a href="/openapi.json">📄 OpenAPI</a>
+      </div>
     </div>
-  </section>
-
-  <footer>Ollama Local Agent – Tool Server &copy; MIT License</footer>
+  </div>
 </div>
 
 <script>
-async function post(url, body) {{
-  const r = await fetch(url, {{
-    method: "POST",
-    headers: {{"Content-Type": "application/json"}},
-    body: JSON.stringify(body),
-  }});
-  return r.json();
+const chatBox = document.getElementById("chat-messages");
+const chatInput = document.getElementById("chat-input");
+const sendBtn = document.getElementById("send-btn");
+const modelSel = document.getElementById("model-select");
+let sessionId = "web-" + Date.now();
+
+// --- UI helpers ---
+function addMsg(role, text) {{
+  // Hide welcome on first real message
+  const w = document.getElementById("welcome");
+  if (w) w.style.display = "none";
+
+  const div = document.createElement("div");
+  div.className = "msg " + role;
+  if (role === "bot") {{
+    // Basic markdown-like formatting
+    div.innerHTML = escapeHtml(text)
+      .replace(/```([\\s\\S]*?)```/g, '<pre style="background:var(--bg);padding:0.5rem;border-radius:6px;overflow-x:auto;margin:0.3rem 0">$1</pre>')
+      .replace(/`([^`]+)`/g, '<code style="background:var(--bg);padding:0.1rem 0.3rem;border-radius:3px">$1</code>')
+      .replace(/\\n/g, '<br>');
+  }} else {{
+    div.textContent = text;
+  }}
+  chatBox.appendChild(div);
+  chatBox.scrollTop = chatBox.scrollHeight;
+  return div;
 }}
 
-// Populate status cards on load
-(async () => {{
+function addToolBadges(tools) {{
+  if (!tools || tools.length === 0) return;
+  const div = document.createElement("div");
+  div.className = "msg system";
+  div.innerHTML = tools.map(t =>
+    '<span style="display:inline-block;background:' + (t.ok ? 'var(--green)' : 'var(--red)') +
+    ';color:#fff;font-size:0.72rem;padding:0.1rem 0.45rem;border-radius:4px;margin:0.1rem 0.2rem;font-weight:600">' +
+    '🔧 ' + escapeHtml(t.tool) + '</span>'
+  ).join(" ");
+  chatBox.appendChild(div);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}}
+
+function escapeHtml(s) {{
+  const d = document.createElement("div");
+  d.textContent = s;
+  return d.innerHTML;
+}}
+
+function showTyping() {{
+  const div = document.createElement("div");
+  div.className = "typing";
+  div.id = "typing-indicator";
+  div.textContent = "🤖 思考中…";
+  chatBox.appendChild(div);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}}
+
+function hideTyping() {{
+  const el = document.getElementById("typing-indicator");
+  if (el) el.remove();
+}}
+
+function setInputEnabled(enabled) {{
+  chatInput.disabled = !enabled;
+  sendBtn.disabled = !enabled;
+}}
+
+// --- Toggle sidebar sections ---
+function toggleSection(h3) {{
+  h3.classList.toggle("open");
+}}
+
+// --- Send ---
+async function sendMessage() {{
+  const text = chatInput.value.trim();
+  if (!text) return;
+  chatInput.value = "";
+  addMsg("user", text);
+  setInputEnabled(false);
+  showTyping();
+
   try {{
-    const info = await post("/tool/get_system_info", {{}});
+    const res = await fetch("/api/chat", {{
+      method: "POST",
+      headers: {{"Content-Type": "application/json"}},
+      body: JSON.stringify({{
+        message: text,
+        model: modelSel.value || "",
+        session_id: sessionId,
+      }}),
+    }});
+    hideTyping();
+    const data = await res.json();
+    if (data.error) {{
+      const errDiv = document.createElement("div");
+      errDiv.className = "msg error";
+      errDiv.textContent = "⚠️ " + data.error;
+      chatBox.appendChild(errDiv);
+    }} else {{
+      addToolBadges(data.tool_calls);
+      addMsg("bot", data.reply);
+    }}
+  }} catch (e) {{
+    hideTyping();
+    const errDiv = document.createElement("div");
+    errDiv.className = "msg error";
+    errDiv.textContent = "⚠️ 请求失败: " + e.message;
+    chatBox.appendChild(errDiv);
+  }} finally {{
+    setInputEnabled(true);
+    chatInput.focus();
+  }}
+}}
+
+function sendExample(btn) {{
+  chatInput.value = btn.textContent;
+  sendMessage();
+}}
+
+async function resetChat() {{
+  try {{
+    await fetch("/api/chat/reset?session_id=" + encodeURIComponent(sessionId), {{method: "POST"}});
+  }} catch (_) {{}}
+  sessionId = "web-" + Date.now();
+  chatBox.innerHTML = "";
+  // Re-add welcome
+  chatBox.innerHTML = `
+    <div class="welcome" id="welcome">
+      <h2>👋 你好！我是本地 AI 助手</h2>
+      <p>我可以帮你执行命令、读写文件、查询数据库、分析数据——所有操作都在本地安全执行。</p>
+      <p style="font-size:0.82rem; color:var(--muted)">试试下面的问题，或直接输入你的需求：</p>
+      <div class="examples">
+        <button onclick="sendExample(this)">我的系统是什么环境？</button>
+        <button onclick="sendExample(this)">工作空间里有哪些文件？</button>
+        <button onclick="sendExample(this)">查看数据库结构</button>
+        <button onclick="sendExample(this)">本地有哪些模型可用？</button>
+      </div>
+    </div>`;
+}}
+
+// Enter key sends
+chatInput.addEventListener("keydown", (e) => {{
+  if (e.key === "Enter" && !e.shiftKey && !sendBtn.disabled) {{
+    e.preventDefault();
+    sendMessage();
+  }}
+}});
+
+// --- Boot: populate status & models ---
+(async () => {{
+  // System info
+  try {{
+    const r = await fetch("/tool/get_system_info", {{method:"POST", headers:{{"Content-Type":"application/json"}}, body:"{{}}"}});
+    const info = await r.json();
     if (info.ok) {{
       document.getElementById("sys-os").textContent = info.result.platform || info.result.system;
       document.getElementById("sys-workspace").textContent = info.result.workspace_root;
     }}
   }} catch (_) {{}}
 
+  // Models
   try {{
-    const mRes = await post("/tool/list_models", {{}});
-    const el = document.getElementById("model-list");
-    const oEl = document.getElementById("ollama-status");
-    if (mRes.ok && mRes.result.models.length > 0) {{
-      oEl.innerHTML = '<span class="status-dot ok"></span>' + mRes.result.models.length + ' 模型可用';
-      el.innerHTML = mRes.result.models
-        .map(m => '<span class="model-tag">' + m.name + '</span>')
-        .join("");
+    const r = await fetch("/api/chat/models");
+    const data = await r.json();
+    const sel = document.getElementById("model-select");
+    const modelListEl = document.getElementById("model-list");
+    const statusEl = document.getElementById("ollama-status");
+    const statusBar = document.getElementById("status-bar");
+
+    if (data.models && data.models.length > 0) {{
+      sel.innerHTML = data.models.map(m =>
+        '<option value="' + m + '"' + (m === data.default ? ' selected' : '') + '>' + m + '</option>'
+      ).join("");
+      statusEl.innerHTML = '<span class="status-dot ok"></span> ' + data.models.length + ' 模型';
+      statusBar.innerHTML = '<span class="status-dot ok"></span><span>已连接</span>';
+      modelListEl.innerHTML = data.models.map(m => '<span class="model-tag">' + m + '</span>').join("");
     }} else {{
-      oEl.innerHTML = '<span class="status-dot err"></span>未连接';
-      el.innerHTML = '<span class="model-tag" style="color:var(--muted)">未检测到模型</span>';
+      sel.innerHTML = '<option value="">无可用模型</option>';
+      statusEl.innerHTML = '<span class="status-dot err"></span> 未连接';
+      statusBar.innerHTML = '<span class="status-dot err"></span><span>Ollama 未连接</span>';
+      modelListEl.innerHTML = '<span class="model-tag" style="color:var(--muted)">无</span>';
     }}
   }} catch (_) {{
-    document.getElementById("ollama-status").innerHTML = '<span class="status-dot err"></span>未连接';
-    document.getElementById("model-list").innerHTML = '<span class="model-tag" style="color:var(--muted)">无法连接 Ollama</span>';
+    document.getElementById("status-bar").innerHTML = '<span class="status-dot err"></span><span>Ollama 未连接</span>';
   }}
-}})();
 
-async function runTool() {{
-  const btn = document.getElementById("tool-run");
-  const pre = document.getElementById("tool-result");
-  const url = document.getElementById("tool-select").value;
-  let body;
-  try {{
-    body = JSON.parse(document.getElementById("tool-body").value || "{{}}");
-  }} catch (e) {{
-    pre.textContent = "⚠️  JSON 解析失败: " + e.message;
-    return;
-  }}
-  btn.disabled = true;
-  pre.textContent = "请求中…";
-  try {{
-    const res = await post(url, body);
-    pre.textContent = JSON.stringify(res, null, 2);
-  }} catch (e) {{
-    pre.textContent = "⚠️  请求失败: " + e.message;
-  }} finally {{
-    btn.disabled = false;
-  }}
-}}
+  chatInput.focus();
+}})();
 </script>
 </body>
 </html>"""

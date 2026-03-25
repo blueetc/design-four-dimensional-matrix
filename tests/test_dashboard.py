@@ -1,4 +1,4 @@
-"""Tests for the toolserver web dashboard at GET /."""
+"""Tests for the toolserver web dashboard and chat API."""
 
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ class TestRenderDashboard:
         for name, _, _ in TOOLS:
             assert name in html, f"Tool '{name}' missing from dashboard"
 
-    def test_contains_swagger_link(self) -> None:
+    def test_contains_api_docs_link(self) -> None:
         html = render_dashboard()
         assert 'href="/docs"' in html
 
@@ -41,14 +41,40 @@ class TestRenderDashboard:
         html = render_dashboard()
         assert 'href="/openapi.json"' in html
 
-    def test_contains_try_panel(self) -> None:
+    def test_contains_chat_input(self) -> None:
+        """Chat input field is present."""
         html = render_dashboard()
-        assert "tool-select" in html
-        assert "runTool" in html
+        assert 'id="chat-input"' in html
+
+    def test_contains_send_button(self) -> None:
+        html = render_dashboard()
+        assert "sendMessage" in html
+
+    def test_contains_model_selector(self) -> None:
+        html = render_dashboard()
+        assert 'id="model-select"' in html
+
+    def test_contains_welcome_message(self) -> None:
+        html = render_dashboard()
+        assert "你好" in html
+
+    def test_contains_example_buttons(self) -> None:
+        html = render_dashboard()
+        assert "sendExample" in html
 
     def test_tool_count_displayed(self) -> None:
         html = render_dashboard()
         assert f"可用工具 ({len(TOOLS)})" in html
+
+    def test_calls_chat_api(self) -> None:
+        """JavaScript references the /api/chat endpoint."""
+        html = render_dashboard()
+        assert "/api/chat" in html
+
+    def test_calls_reset_api(self) -> None:
+        """JavaScript references the chat reset endpoint."""
+        html = render_dashboard()
+        assert "/api/chat/reset" in html
 
 
 # ---------------------------------------------------------------------------
@@ -67,6 +93,28 @@ class TestToolsMetadata:
     def test_no_duplicate_names(self) -> None:
         names = [name for name, _, _ in TOOLS]
         assert len(names) == len(set(names))
+
+
+# ---------------------------------------------------------------------------
+# Chat API models
+# ---------------------------------------------------------------------------
+
+class TestChatModels:
+    """Test the Pydantic request/response models for chat API."""
+
+    def test_chat_in_defaults(self) -> None:
+        from toolserver.server import ChatIn
+        inp = ChatIn(message="hi")
+        assert inp.message == "hi"
+        assert inp.model == ""
+        assert inp.session_id == "default"
+
+    def test_chat_out_fields(self) -> None:
+        from toolserver.server import ChatOut
+        out = ChatOut(reply="ok", model="m", session_id="s")
+        assert out.reply == "ok"
+        assert out.tool_calls == []
+        assert out.error is None
 
 
 # ---------------------------------------------------------------------------
@@ -103,3 +151,18 @@ class TestDashboardEndpoint:
     def test_docs_still_accessible(self) -> None:
         resp = self.client.get("/docs")
         assert resp.status_code == 200
+
+    def test_chat_models_endpoint(self) -> None:
+        with mock.patch("toolserver.server._list_ollama_models", return_value=[
+            {"name": "test-model", "size": 100},
+        ]):
+            resp = self.client.get("/api/chat/models")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "models" in data
+        assert "test-model" in data["models"]
+
+    def test_chat_reset_endpoint(self) -> None:
+        resp = self.client.post("/api/chat/reset?session_id=test-sess")
+        assert resp.status_code == 200
+        assert resp.json()["ok"] is True

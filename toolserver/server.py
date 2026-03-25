@@ -9,7 +9,7 @@ import shutil
 
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from .audit import append_audit
 from .config import load_policy
@@ -47,6 +47,141 @@ app = FastAPI(title="Ollama Local Agent – Tool Server")
 def dashboard() -> str:
     """Serve the interactive dashboard at the root URL."""
     return render_dashboard()
+
+
+# ---------------------------------------------------------------------------
+# Chat API – natural-language conversation with the agent
+# ---------------------------------------------------------------------------
+
+# In-memory session store: session_id → messages list.
+# Allows multi-turn conversations from the web UI.
+_CHAT_SESSIONS: dict[str, list[dict]] = {}
+
+# Maximum sessions kept in memory to prevent unbounded growth.
+_MAX_SESSIONS = 64
+
+
+class ChatIn(BaseModel):
+    """User message sent to the chat API."""
+    message: str
+    model: str = Field(default="")
+    session_id: str = Field(default="default")
+
+
+class ChatOut(BaseModel):
+    """Agent reply returned from the chat API."""
+    reply: str
+    model: str
+    session_id: str
+    tool_calls: list[dict] = Field(default_factory=list)
+    error: str | None = None
+
+
+@app.post("/api/chat", response_model=ChatOut)
+def chat_endpoint(inp: ChatIn) -> ChatOut:
+    """Run the agent loop for one user message and return the reply.
+
+    Maintains per-session conversation history so the LLM sees prior
+    context, enabling follow-up questions.
+    """
+    import json as _json
+
+    from agent.main import _init_messages, _try_parse_tool_call, call_tool
+    from agent.main import MAX_ITERATIONS, TOOLS as AGENT_TOOLS
+    from agent.ollama_client import OllamaConnectionError, ollama_chat
+
+    model = inp.model or os.environ.get("OLLAMA_MODEL", "qwen2.5:7b")
+
+    # Retrieve or create session history.
+    if inp.session_id not in _CHAT_SESSIONS:
+        # Evict oldest session if at capacity.
+        if len(_CHAT_SESSIONS) >= _MAX_SESSIONS:
+            oldest = next(iter(_CHAT_SESSIONS))
+            del _CHAT_SESSIONS[oldest]
+        _CHAT_SESSIONS[inp.session_id] = _init_messages()
+
+    messages = _CHAT_SESSIONS[inp.session_id]
+    messages.append({"role": "user", "content": inp.message})
+
+    tool_calls: list[dict] = []
+
+    try:
+        for _ in range(MAX_ITERATIONS):
+            resp = ollama_chat(model=model, messages=messages)
+            content: str = resp["message"]["content"].strip()
+
+            call = _try_parse_tool_call(content)
+            if call is not None:
+                tool_name = call["tool"]
+                args = call.get("args", {})
+
+                if tool_name not in AGENT_TOOLS:
+                    messages.append({"role": "assistant", "content": content})
+                    break
+
+                tool_result = call_tool(tool_name, args)
+                ok = tool_result.get("ok", False)
+                tool_calls.append({
+                    "tool": tool_name,
+                    "args": args,
+                    "ok": ok,
+                })
+                messages.append({"role": "assistant", "content": content})
+                messages.append({
+                    "role": "assistant",
+                    "content": f"[tool result] {_json.dumps(tool_result, ensure_ascii=False)}",
+                })
+                continue
+
+            # Natural-language reply – done.
+            messages.append({"role": "assistant", "content": content})
+            append_audit(AUDIT_LOG, {
+                "tool": "chat",
+                "args": {"message": inp.message[:200], "model": model},
+                "ok": True,
+            })
+            return ChatOut(
+                reply=content,
+                model=model,
+                session_id=inp.session_id,
+                tool_calls=tool_calls,
+            )
+
+        # Max iterations reached – return last content.
+        last = messages[-1]["content"] if messages else ""
+        return ChatOut(
+            reply=last,
+            model=model,
+            session_id=inp.session_id,
+            tool_calls=tool_calls,
+        )
+    except OllamaConnectionError as exc:
+        return ChatOut(
+            reply="",
+            model=model,
+            session_id=inp.session_id,
+            tool_calls=tool_calls,
+            error=str(exc),
+        )
+
+
+@app.get("/api/chat/models")
+def chat_models() -> dict:
+    """Return available models for the chat UI model selector."""
+    models = _list_ollama_models()
+    default = os.environ.get("OLLAMA_MODEL", "qwen2.5:7b")
+    return {
+        "models": [m.get("name", "?") for m in models],
+        "default": default,
+    }
+
+
+@app.post("/api/chat/reset")
+def chat_reset(session_id: str = "default") -> dict:
+    """Clear conversation history for a session."""
+    if session_id in _CHAT_SESSIONS:
+        del _CHAT_SESSIONS[session_id]
+    return {"ok": True, "session_id": session_id}
 
 
 # ---------------------------------------------------------------------------
