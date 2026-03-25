@@ -246,9 +246,8 @@ def _handle_slash_command(
         print(f"=== Panel 讨论 ({len(models_to_ask)} 个模型) ===\n")
         for m in models_to_ask:
             print(f"--- [{m}] ---")
-            # Each panel member gets a fresh copy of history to avoid
-            # cross-contamination, but results are appended to the
-            # shared conversation so the user can reference them later.
+            # Panel Q&A is appended to the shared conversation so the
+            # user can reference all model answers in subsequent turns.
             messages.append({"role": "user", "content": f"[panel:{m}] {rest}"})
             try:
                 resp = ollama_chat(model=m, messages=messages)
