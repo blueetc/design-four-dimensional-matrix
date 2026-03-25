@@ -1,0 +1,48 @@
+# Database connection configuration
+# Supports: sqlite, postgresql, mysql, sqlserver
+# Recommendation: use separate read-only and read-write accounts
+
+databases:
+  default:
+    driver: sqlite
+    # For SQLite, path is relative to workspace_root
+    path: "agent.sqlite3"
+
+  # Example PostgreSQL configuration (uncomment to use):
+  # postgres_ro:
+  #   driver: postgresql
+  #   host: localhost
+  #   port: 5432
+  #   database: mydb
+  #   user: readonly_user
+  #   password: "${PGRO_PASSWORD}"
+  #   readonly: true
+  #
+  # postgres_rw:
+  #   driver: postgresql
+  #   host: localhost
+  #   port: 5432
+  #   database: mydb
+  #   user: rw_user
+  #   password: "${PGRW_PASSWORD}"
+  #   readonly: false
+
+  # Example MySQL configuration (uncomment to use):
+  # mysql_ro:
+  #   driver: mysql
+  #   host: localhost
+  #   port: 3306
+  #   database: mydb
+  #   user: readonly_user
+  #   password: "${MYSQL_RO_PASSWORD}"
+  #   readonly: true
+
+  # Example SQL Server configuration (uncomment to use):
+  # sqlserver_ro:
+  #   driver: sqlserver
+  #   host: localhost
+  #   port: 1433
+  #   database: mydb
+  #   user: readonly_user
+  #   password: "${MSSQL_RO_PASSWORD}"
+  #   readonly: true
