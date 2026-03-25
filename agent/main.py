@@ -2,6 +2,12 @@
 
 Supports both single-shot execution and interactive REPL mode with
 conversation history preserved across follow-up questions.
+
+Multi-model support:
+- ``/models``            — list locally available Ollama models
+- ``/model <name>``      — switch the active model mid-conversation
+- ``/ask <model> <msg>`` — one-shot question to a different model
+- ``/panel <msg>``       — ask all (or selected) models the same question
 """
 
 from __future__ import annotations
@@ -11,7 +17,7 @@ import sys
 
 import requests
 
-from .ollama_client import ollama_chat
+from .ollama_client import list_models, ollama_chat
 from .prompts import DEV_PROMPT, SYSTEM_PROMPT
 
 TOOLSERVER = "http://127.0.0.1:7331"
@@ -47,12 +53,18 @@ TOOLS = {
     "create_wide_table": "/tool/create_wide_table",
     "etl_to_wide_table": "/tool/etl_to_wide_table",
     "visualize_3d": "/tool/visualize_3d",
+    # Model discovery
+    "list_models": "/tool/list_models",
 }
 
 MAX_ITERATIONS = 50
 
 # Exit commands recognised by the interactive REPL.
 _EXIT_COMMANDS = frozenset({"exit", "quit", "bye", "q", "退出", "结束"})
+
+# Default set of panel models.  Users override via ``/panel+ model``
+# and ``/panel- model`` during a session.
+DEFAULT_PANEL_MODELS: list[str] = []
 
 
 def call_tool(tool: str, args: dict) -> dict:
@@ -70,6 +82,48 @@ def _init_messages() -> list[dict]:
         {"role": "system", "content": DEV_PROMPT},
     ]
 
+
+# ---------------------------------------------------------------------------
+# Model helpers
+# ---------------------------------------------------------------------------
+
+def _format_model_list(models: list[dict]) -> str:
+    """Pretty-print a list of Ollama models for terminal output."""
+    if not models:
+        return "(无法连接 Ollama 或没有可用模型)"
+    lines: list[str] = []
+    for m in models:
+        name = m.get("name", "?")
+        size_bytes = m.get("size", 0)
+        if size_bytes > 0:
+            size_gb = size_bytes / (1024 ** 3)
+            size_str = f"{size_gb:.1f} GB" if size_gb >= 1 else f"{size_bytes / (1024**2):.0f} MB"
+        else:
+            size_str = "cloud"
+        lines.append(f"  {name:<35s} {size_str}")
+    return "\n".join(lines)
+
+
+def _resolve_panel_models(
+    panel_models: list[str],
+    active_model: str,
+) -> list[str]:
+    """Return the list of models to use for a panel discussion.
+
+    If *panel_models* is empty, tries to auto-discover from Ollama and
+    falls back to just the *active_model*.
+    """
+    if panel_models:
+        return list(panel_models)
+    available = list_models()
+    if available:
+        return [m["name"] for m in available]
+    return [active_model]
+
+
+# ---------------------------------------------------------------------------
+# Core agent loop
+# ---------------------------------------------------------------------------
 
 def run(
     task: str,
@@ -133,6 +187,119 @@ def run(
     return messages
 
 
+# ---------------------------------------------------------------------------
+# Slash-command dispatcher (used by the interactive REPL)
+# ---------------------------------------------------------------------------
+
+def _handle_slash_command(
+    cmd: str,
+    *,
+    active_model: str,
+    messages: list[dict],
+    panel_models: list[str],
+) -> tuple[str, list[dict], list[str], bool]:
+    """Process a ``/``-prefixed command typed in the REPL.
+
+    Returns ``(active_model, messages, panel_models, handled)`` where
+    *handled* is ``True`` when the input was consumed by this function
+    (so the caller should NOT forward it to the LLM).
+    """
+    parts = cmd.split(None, 1)
+    verb = parts[0].lower()
+    rest = parts[1].strip() if len(parts) > 1 else ""
+
+    # /models – list available models
+    if verb == "/models":
+        models = list_models()
+        print(_format_model_list(models))
+        return active_model, messages, panel_models, True
+
+    # /model <name> – switch the active model
+    if verb == "/model":
+        if not rest:
+            print(f"当前模型: {active_model}")
+        else:
+            active_model = rest
+            print(f"已切换模型 → {active_model}")
+        return active_model, messages, panel_models, True
+
+    # /ask <model> <question> – one-shot to a different model
+    if verb == "/ask":
+        ask_parts = rest.split(None, 1)
+        if len(ask_parts) < 2:
+            print("用法: /ask <模型名> <问题>")
+            return active_model, messages, panel_models, True
+        tmp_model, question = ask_parts
+        print(f"[{tmp_model}]")
+        messages = run(question, model=tmp_model, messages=messages)
+        return active_model, messages, panel_models, True
+
+    # /panel <question> – ask every panel model
+    if verb == "/panel":
+        if not rest:
+            if panel_models:
+                print("Panel 模型: " + ", ".join(panel_models))
+            else:
+                print("Panel 为空，将自动使用所有本地模型。")
+            return active_model, messages, panel_models, True
+        models_to_ask = _resolve_panel_models(panel_models, active_model)
+        print(f"=== Panel 讨论 ({len(models_to_ask)} 个模型) ===\n")
+        for m in models_to_ask:
+            print(f"--- [{m}] ---")
+            # Each panel member gets a fresh copy of history to avoid
+            # cross-contamination, but results are appended to the
+            # shared conversation so the user can reference them later.
+            messages.append({"role": "user", "content": f"[panel:{m}] {rest}"})
+            try:
+                resp = ollama_chat(model=m, messages=messages)
+                content = resp["message"]["content"].strip()
+            except Exception as exc:
+                content = f"(模型 {m} 调用失败: {exc})"
+            print(content)
+            messages.append({
+                "role": "assistant",
+                "content": f"[{m}] {content}",
+            })
+            print()
+        print("=== Panel 结束 ===")
+        return active_model, messages, panel_models, True
+
+    # /panel+ <model> – add model to panel list
+    if verb == "/panel+":
+        if rest and rest not in panel_models:
+            panel_models.append(rest)
+            print(f"已添加 {rest} 到 Panel → {panel_models}")
+        return active_model, messages, panel_models, True
+
+    # /panel- <model> – remove model from panel list
+    if verb == "/panel-":
+        if rest in panel_models:
+            panel_models.remove(rest)
+            print(f"已移除 {rest} → {panel_models}")
+        return active_model, messages, panel_models, True
+
+    # /help
+    if verb == "/help":
+        print(
+            "可用命令:\n"
+            "  /models              列出本地可用模型\n"
+            "  /model [名称]        查看或切换当前模型\n"
+            "  /ask <模型> <问题>   向指定模型提问（单次）\n"
+            "  /panel <问题>        向所有 Panel 模型提问\n"
+            "  /panel+ <模型>       添加模型到 Panel\n"
+            "  /panel- <模型>       从 Panel 移除模型\n"
+            "  /help                显示此帮助\n"
+            "  exit/quit/q/退出     退出"
+        )
+        return active_model, messages, panel_models, True
+
+    return active_model, messages, panel_models, False
+
+
+# ---------------------------------------------------------------------------
+# Interactive REPL
+# ---------------------------------------------------------------------------
+
 def run_interactive(model: str = "qwen2.5:7b") -> None:
     """Start an interactive REPL that keeps conversation history.
 
@@ -140,15 +307,26 @@ def run_interactive(model: str = "qwen2.5:7b") -> None:
     conversation context is preserved so the model can reference prior
     tool results and answers.
 
+    Slash commands for multi-model support:
+
+    - ``/models``              — list locally available Ollama models
+    - ``/model <name>``        — switch the active model
+    - ``/ask <model> <msg>``   — one-shot question to another model
+    - ``/panel <msg>``         — ask all panel models the same question
+    - ``/panel+ <model>``      — add a model to the panel
+    - ``/panel- <model>``      — remove a model from the panel
+    - ``/help``                — show available commands
+
     Type ``exit``, ``quit``, ``q``, ``bye``, ``退出``, or ``结束`` to
     leave the session.  Press :kbd:`Ctrl-C` or :kbd:`Ctrl-D` at any
     time to exit immediately.
     """
     messages: list[dict] = _init_messages()
+    panel_models: list[str] = list(DEFAULT_PANEL_MODELS)
 
     print("=== 本地自动化代理（交互模式） ===")
     print(f"模型: {model}")
-    print("输入任务或追问，输入 exit/quit/q/退出/结束 退出。\n")
+    print("输入任务或追问，输入 /help 查看命令，exit/quit/q/退出/结束 退出。\n")
 
     while True:
         try:
@@ -162,6 +340,18 @@ def run_interactive(model: str = "qwen2.5:7b") -> None:
         if user_input.lower() in _EXIT_COMMANDS:
             print("再见！")
             break
+
+        # Handle slash commands
+        if user_input.startswith("/"):
+            model, messages, panel_models, handled = _handle_slash_command(
+                user_input,
+                active_model=model,
+                messages=messages,
+                panel_models=panel_models,
+            )
+            if handled:
+                print()
+                continue
 
         messages = run(user_input, model=model, messages=messages)
         print()  # blank line between turns

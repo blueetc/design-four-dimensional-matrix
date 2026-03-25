@@ -55,7 +55,23 @@ SYSTEM_PROMPT = """\
 
 get_system_info, run_command, read_file, write_file, list_dir, stat, \
 db_schema, db_query, db_exec, analyze_fields, design_wide_table, \
-create_wide_table, etl_to_wide_table, visualize_3d
+create_wide_table, etl_to_wide_table, visualize_3d, list_models
+
+## 多模型支持
+
+用户可能本地安装了多个 Ollama 模型。在交互模式下支持：
+
+- ``/models``              — 列出本地可用模型（调用 Ollama ``/api/tags``）
+- ``/model <名称>``        — 切换当前对话模型（如 ``/model llama3.3:70b``）
+- ``/ask <模型> <问题>``   — 向指定模型单次提问，不切换当前模型
+- ``/panel <问题>``        — 向所有 Panel 模型同时提问，比较不同模型回答
+- ``/panel+ <模型>``       — 将模型添加到 Panel 列表
+- ``/panel- <模型>``       — 从 Panel 列表移除模型
+
+使用场景：
+1. **快速验证**：用小模型（7b/14b）做日常操作，遇到复杂推理切换到大模型（70b）
+2. **交叉验证**：用 /panel 让多个模型回答同一个问题，比较结果
+3. **专业分工**：编码用 coder 模型，分析用通用模型，嵌入用 embed 模型
 
 ## 宽表分析流水线（Wide Table Pipeline）
 

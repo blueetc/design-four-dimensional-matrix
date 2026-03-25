@@ -26,6 +26,9 @@ from .shell import run_command as _run
 from .visualizer import save_3d_html
 from .wide_table import create_wide_table, design_wide_table, incremental_etl
 
+# Ollama model discovery
+from agent.ollama_client import list_models as _list_ollama_models
+
 _POLICY_PATH = os.path.join(os.path.dirname(__file__), "..", "config", "policy.yaml")
 POLICY = load_policy(_POLICY_PATH)
 AUDIT_LOG = os.path.join(POLICY["workspace_root"], "audit.jsonl")
@@ -110,6 +113,19 @@ def get_system_info() -> dict:
     }
     append_audit(AUDIT_LOG, {"tool": "get_system_info", "args": {}, "ok": True})
     return _ok("get_system_info", res)
+
+
+@app.post("/tool/list_models")
+def list_models_endpoint() -> dict:
+    """Return all models available on the local Ollama instance."""
+    models = _list_ollama_models()
+    append_audit(AUDIT_LOG, {
+        "tool": "list_models",
+        "args": {},
+        "ok": True,
+        "result": {"count": len(models)},
+    })
+    return _ok("list_models", {"models": models})
 
 
 def _detect_shell() -> str:
