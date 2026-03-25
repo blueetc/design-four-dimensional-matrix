@@ -5,6 +5,16 @@ serving infrastructure.  The primary UI element is a **chat panel** where
 users can talk to the Ollama agent in natural language.  Status cards,
 available models, and the tool catalogue are kept as collapsible
 reference sections below the chat.
+
+Professional UX features:
+- Guided onboarding with categorized example cards
+- Keyboard shortcuts (Ctrl+K focus, ↑/↓ history, Escape cancel)
+- Accessibility: aria attributes, focus outlines, semantic roles
+- Message actions: copy, retry on error, response time
+- Responsive design: mobile-friendly touch targets
+- Help tooltip and shortcut reference
+- Light/dark theme toggle
+- Loading states and smooth transitions
 """
 
 from __future__ import annotations
@@ -43,39 +53,70 @@ def render_dashboard() -> str:
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
 <title>Ollama Local Agent</title>
 <style>
+  /* --- Theme variables --- */
   :root {{
     --bg: #0f1117; --card: #1a1d27; --border: #2d3140;
     --text: #e0e0e0; --muted: #8b8fa3; --accent: #6c8cff;
     --green: #2ecc71; --red: #e74c3c; --yellow: #f1c40f;
     --chat-user: #2a2d3a; --chat-bot: #1e2230;
+    --focus-ring: rgba(108,140,255,0.5);
+    --hover-bg: rgba(108,140,255,0.08);
   }}
+  html.light {{
+    --bg: #f5f6fa; --card: #ffffff; --border: #e0e2eb;
+    --text: #1a1d27; --muted: #6b7085; --accent: #4a6cf7;
+    --green: #27ae60; --red: #e74c3c; --yellow: #f39c12;
+    --chat-user: #e8eaf6; --chat-bot: #f0f1f5;
+    --focus-ring: rgba(74,108,247,0.4);
+    --hover-bg: rgba(74,108,247,0.06);
+  }}
+
   * {{ box-sizing: border-box; margin: 0; padding: 0; }}
   body {{
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     background: var(--bg); color: var(--text); line-height: 1.6;
     padding: 0; height: 100vh; display: flex; flex-direction: column;
+    transition: background 0.2s, color 0.2s;
+  }}
+
+  /* --- Focus visible for keyboard navigation --- */
+  :focus-visible {{
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+    border-radius: 4px;
   }}
 
   /* --- Header --- */
   header {{
     background: var(--card); border-bottom: 1px solid var(--border);
-    padding: 0.75rem 1.5rem; display: flex; align-items: center;
+    padding: 0.6rem 1.2rem; display: flex; align-items: center;
     justify-content: space-between; flex-shrink: 0;
+    transition: background 0.2s;
   }}
-  header h1 {{ font-size: 1.2rem; }}
+  header h1 {{ font-size: 1.15rem; display: flex; align-items: center; gap: 0.4rem; }}
   header h1 span {{ color: var(--accent); }}
-  .header-right {{ display: flex; align-items: center; gap: 1rem; font-size: 0.85rem; }}
+  .header-right {{ display: flex; align-items: center; gap: 0.6rem; font-size: 0.82rem; }}
   .header-right select {{
     background: var(--bg); color: var(--text); border: 1px solid var(--border);
-    border-radius: 6px; padding: 0.3rem 0.5rem; font-size: 0.85rem;
+    border-radius: 6px; padding: 0.3rem 0.5rem; font-size: 0.82rem;
+    min-height: 32px; cursor: pointer;
   }}
   .header-right .status {{ display: flex; align-items: center; gap: 0.3rem; }}
+  .header-btn {{
+    background: transparent; border: 1px solid var(--border); color: var(--muted);
+    border-radius: 6px; padding: 0.25rem 0.5rem; font-size: 0.82rem;
+    cursor: pointer; display: flex; align-items: center; gap: 0.25rem;
+    min-height: 32px; min-width: 32px; justify-content: center;
+    transition: border-color 0.15s, color 0.15s;
+  }}
+  .header-btn:hover {{ border-color: var(--accent); color: var(--text); }}
+  .header-btn[aria-pressed="true"] {{ border-color: var(--accent); color: var(--accent); }}
   .status-dot {{
     display: inline-block; width: 8px; height: 8px;
-    border-radius: 50%; vertical-align: middle;
+    border-radius: 50%; vertical-align: middle; flex-shrink: 0;
   }}
   .status-dot.ok {{ background: var(--green); }}
   .status-dot.err {{ background: var(--red); }}
@@ -84,25 +125,33 @@ def render_dashboard() -> str:
 
   /* --- Main area: chat + optional sidebar --- */
   .main {{ flex: 1; display: flex; overflow: hidden; }}
-  .chat-area {{ flex: 1; display: flex; flex-direction: column; min-width: 0; }}
+  .chat-area {{
+    flex: 1; display: flex; flex-direction: column; min-width: 0;
+  }}
 
   /* --- Chat messages --- */
   .chat-messages {{
-    flex: 1; overflow-y: auto; padding: 1rem 1.5rem;
-    display: flex; flex-direction: column; gap: 0.75rem;
+    flex: 1; overflow-y: auto; padding: 1rem 1.2rem;
+    display: flex; flex-direction: column; gap: 0.6rem;
+    scroll-behavior: smooth;
   }}
+  .msg-wrapper {{
+    display: flex; flex-direction: column; gap: 0.15rem;
+    max-width: 85%; position: relative;
+  }}
+  .msg-wrapper.user {{ align-self: flex-end; }}
+  .msg-wrapper.bot {{ align-self: flex-start; }}
   .msg {{
-    max-width: 85%; padding: 0.75rem 1rem; border-radius: 12px;
-    font-size: 0.92rem; line-height: 1.55; white-space: pre-wrap;
-    word-break: break-word;
+    padding: 0.65rem 0.9rem; border-radius: 12px;
+    font-size: 0.9rem; line-height: 1.55; white-space: pre-wrap;
+    word-break: break-word; position: relative;
   }}
   .msg.user {{
-    align-self: flex-end; background: var(--chat-user);
-    border-bottom-right-radius: 4px;
+    background: var(--chat-user); border-bottom-right-radius: 4px;
   }}
   .msg.bot {{
-    align-self: flex-start; background: var(--chat-bot);
-    border: 1px solid var(--border); border-bottom-left-radius: 4px;
+    background: var(--chat-bot); border: 1px solid var(--border);
+    border-bottom-left-radius: 4px;
   }}
   .msg.bot .tool-badge {{
     display: inline-block; background: var(--accent); color: #fff;
@@ -110,51 +159,80 @@ def render_dashboard() -> str:
     margin-right: 0.3rem; font-weight: 600; opacity: 0.85;
   }}
   .msg.system {{
-    align-self: center; color: var(--muted); font-size: 0.82rem;
-    background: transparent; padding: 0.3rem;
+    align-self: center; color: var(--muted); font-size: 0.8rem;
+    background: transparent; padding: 0.3rem; max-width: 100%;
   }}
   .msg.error {{
-    align-self: center; color: var(--red); font-size: 0.85rem;
-    background: rgba(231,76,60,0.1); border: 1px solid rgba(231,76,60,0.3);
-    border-radius: 8px; padding: 0.6rem 1rem;
+    align-self: center; color: var(--red); font-size: 0.82rem;
+    background: rgba(231,76,60,0.08); border: 1px solid rgba(231,76,60,0.25);
+    border-radius: 8px; padding: 0.5rem 0.9rem; max-width: 100%;
   }}
-  .typing {{ color: var(--muted); font-style: italic; font-size: 0.85rem; padding: 0.5rem 1rem; }}
+
+  /* --- Message meta (timestamp, actions) --- */
+  .msg-meta {{
+    display: flex; align-items: center; gap: 0.4rem;
+    font-size: 0.7rem; color: var(--muted); padding: 0 0.3rem;
+    opacity: 0; transition: opacity 0.15s;
+  }}
+  .msg-wrapper:hover .msg-meta {{ opacity: 1; }}
+  .msg-wrapper.user .msg-meta {{ justify-content: flex-end; }}
+  .msg-action {{
+    background: none; border: none; color: var(--muted); cursor: pointer;
+    font-size: 0.72rem; padding: 0.1rem 0.3rem; border-radius: 3px;
+    transition: color 0.1s, background 0.1s;
+  }}
+  .msg-action:hover {{ color: var(--accent); background: var(--hover-bg); }}
+  .msg-action.copied {{ color: var(--green); }}
 
   /* --- Input bar --- */
   .chat-input {{
     border-top: 1px solid var(--border); background: var(--card);
-    padding: 0.75rem 1.5rem; display: flex; gap: 0.5rem; flex-shrink: 0;
+    padding: 0.6rem 1.2rem; display: flex; gap: 0.4rem; flex-shrink: 0;
+    align-items: center; transition: background 0.2s;
   }}
   .chat-input input {{
     flex: 1; background: var(--bg); color: var(--text);
     border: 1px solid var(--border); border-radius: 8px;
-    padding: 0.6rem 1rem; font-size: 0.95rem; outline: none;
+    padding: 0.55rem 0.9rem; font-size: 0.9rem; outline: none;
+    min-height: 40px; transition: border-color 0.15s;
   }}
-  .chat-input input:focus {{ border-color: var(--accent); }}
+  .chat-input input:focus {{ border-color: var(--accent); box-shadow: 0 0 0 2px var(--focus-ring); }}
   .chat-input button {{
     background: var(--accent); color: #fff; border: none;
-    border-radius: 8px; padding: 0.6rem 1.2rem; font-size: 0.95rem;
+    border-radius: 8px; padding: 0.5rem 1rem; font-size: 0.9rem;
     cursor: pointer; font-weight: 600; white-space: nowrap;
-    transition: opacity 0.15s;
+    min-height: 40px; min-width: 44px;
+    transition: opacity 0.15s, transform 0.1s;
   }}
-  .chat-input button:hover {{ opacity: 0.85; }}
+  .chat-input button:hover {{ opacity: 0.88; }}
+  .chat-input button:active {{ transform: scale(0.97); }}
   .chat-input button:disabled {{ opacity: 0.4; cursor: not-allowed; }}
   .chat-input .btn-secondary {{
     background: transparent; color: var(--muted); border: 1px solid var(--border);
-    font-weight: 400; padding: 0.6rem 0.8rem;
+    font-weight: 400; padding: 0.5rem 0.7rem;
   }}
+  .chat-input .btn-secondary:hover {{ border-color: var(--accent); color: var(--text); }}
   .chat-input .btn-stop {{
     background: var(--red); display: none;
   }}
   .chat-input .btn-stop.visible {{
-    display: inline-block;
+    display: inline-flex; align-items: center; gap: 0.3rem;
+  }}
+  .input-hint {{
+    font-size: 0.68rem; color: var(--muted); padding: 0.15rem 1.2rem 0;
+    display: flex; gap: 0.8rem; flex-shrink: 0;
+  }}
+  .input-hint kbd {{
+    background: var(--bg); border: 1px solid var(--border); border-radius: 3px;
+    padding: 0 0.3rem; font-size: 0.65rem; font-family: inherit;
   }}
 
   /* --- Progress steps --- */
   .progress-step {{
     display: flex; align-items: center; gap: 0.5rem;
-    padding: 0.35rem 0.8rem; font-size: 0.82rem; color: var(--muted);
+    padding: 0.3rem 0.75rem; font-size: 0.8rem; color: var(--muted);
     border-left: 2px solid var(--border); margin-left: 0.5rem;
+    transition: border-color 0.2s, color 0.2s;
   }}
   .progress-step.running {{
     border-left-color: var(--yellow); color: var(--yellow);
@@ -165,11 +243,9 @@ def render_dashboard() -> str:
   .progress-step.failed {{
     border-left-color: var(--red); color: var(--red);
   }}
-  .progress-step .step-icon {{
-    font-size: 0.9rem; flex-shrink: 0;
-  }}
+  .progress-step .step-icon {{ font-size: 0.85rem; flex-shrink: 0; }}
   .progress-step .step-detail {{
-    font-size: 0.75rem; color: var(--muted);
+    font-size: 0.72rem; color: var(--muted);
     max-height: 0; overflow: hidden; transition: max-height 0.2s;
     white-space: pre-wrap; word-break: break-all;
   }}
@@ -179,128 +255,247 @@ def render_dashboard() -> str:
     background: var(--bg); border-radius: 4px;
   }}
   .progress-step .step-toggle {{
-    cursor: pointer; font-size: 0.72rem; color: var(--accent);
+    cursor: pointer; font-size: 0.7rem; color: var(--accent);
     margin-left: auto; flex-shrink: 0;
   }}
+  .progress-step .step-toggle:hover {{ text-decoration: underline; }}
 
-  /* --- Reference panel (collapsible sidebar on wide screens) --- */
+  /* --- Reference panel (collapsible sidebar) --- */
   .ref-panel {{
-    width: 340px; background: var(--card); border-left: 1px solid var(--border);
-    overflow-y: auto; flex-shrink: 0; padding: 1rem; font-size: 0.85rem;
+    width: 320px; background: var(--card); border-left: 1px solid var(--border);
+    overflow-y: auto; flex-shrink: 0; padding: 0.8rem; font-size: 0.82rem;
+    transition: background 0.2s;
   }}
   @media (max-width: 800px) {{
     .ref-panel {{ display: none; }}
   }}
   .ref-panel h3 {{
-    font-size: 0.8rem; color: var(--muted); text-transform: uppercase;
-    letter-spacing: 0.04em; margin-bottom: 0.5rem; margin-top: 1rem;
-    cursor: pointer; user-select: none;
+    font-size: 0.75rem; color: var(--muted); text-transform: uppercase;
+    letter-spacing: 0.04em; margin-bottom: 0.4rem; margin-top: 0.9rem;
+    cursor: pointer; user-select: none; padding: 0.2rem 0;
+    transition: color 0.15s;
   }}
+  .ref-panel h3:hover {{ color: var(--text); }}
   .ref-panel h3:first-child {{ margin-top: 0; }}
   .ref-panel h3::before {{ content: "▸ "; }}
   .ref-panel h3.open::before {{ content: "▾ "; }}
   .ref-panel .section-body {{ display: none; }}
   .ref-panel h3.open + .section-body {{ display: block; }}
 
-  .cards {{ display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem; }}
+  .cards {{ display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; margin-bottom: 0.4rem; }}
   .card {{
     background: var(--bg); border: 1px solid var(--border);
-    border-radius: 8px; padding: 0.6rem 0.8rem;
+    border-radius: 8px; padding: 0.5rem 0.7rem;
   }}
-  .card .label {{ font-size: 0.72rem; color: var(--muted); text-transform: uppercase; }}
-  .card .value {{ font-size: 0.95rem; font-weight: 600; }}
+  .card .label {{ font-size: 0.68rem; color: var(--muted); text-transform: uppercase; }}
+  .card .value {{ font-size: 0.9rem; font-weight: 600; }}
 
-  .model-list {{ display: flex; flex-wrap: wrap; gap: 0.4rem; }}
+  .model-list {{ display: flex; flex-wrap: wrap; gap: 0.35rem; }}
   .model-tag {{
     background: var(--bg); border: 1px solid var(--border);
-    border-radius: 5px; padding: 0.15rem 0.5rem; font-size: 0.8rem;
+    border-radius: 5px; padding: 0.12rem 0.45rem; font-size: 0.78rem;
   }}
 
-  table {{ width: 100%; border-collapse: collapse; font-size: 0.8rem; }}
-  th, td {{ text-align: left; padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--border); }}
-  th {{ color: var(--muted); font-weight: 500; font-size: 0.72rem; text-transform: uppercase; }}
+  table {{ width: 100%; border-collapse: collapse; font-size: 0.78rem; }}
+  th, td {{ text-align: left; padding: 0.35rem 0.4rem; border-bottom: 1px solid var(--border); }}
+  th {{ color: var(--muted); font-weight: 500; font-size: 0.7rem; text-transform: uppercase; }}
   .tool-name {{ font-weight: 600; white-space: nowrap; }}
-  .tool-endpoint code {{ color: var(--accent); font-size: 0.78rem; }}
+  .tool-endpoint code {{ color: var(--accent); font-size: 0.75rem; }}
 
-  .links {{ display: flex; gap: 0.75rem; margin-top: 0.5rem; }}
-  .links a {{ color: var(--accent); text-decoration: none; font-size: 0.82rem; }}
+  .links {{ display: flex; gap: 0.6rem; margin-top: 0.4rem; }}
+  .links a {{ color: var(--accent); text-decoration: none; font-size: 0.8rem; }}
   .links a:hover {{ text-decoration: underline; }}
 
-  /* Welcome message */
-  .welcome {{ text-align: center; padding: 2rem 1rem; color: var(--muted); }}
-  .welcome h2 {{ font-size: 1.3rem; color: var(--text); margin-bottom: 0.5rem; }}
-  .welcome p {{ font-size: 0.9rem; max-width: 500px; margin: 0 auto 1rem; }}
-  .examples {{ display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; }}
+  /* --- Welcome / Onboarding --- */
+  .welcome {{ text-align: center; padding: 1.5rem 1rem; color: var(--muted); }}
+  .welcome h2 {{ font-size: 1.2rem; color: var(--text); margin-bottom: 0.3rem; }}
+  .welcome .subtitle {{
+    font-size: 0.88rem; max-width: 520px; margin: 0 auto 0.8rem;
+    line-height: 1.5;
+  }}
+  .welcome .caps {{
+    display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center;
+    margin-bottom: 1.2rem;
+  }}
+  .cap-badge {{
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 20px; padding: 0.25rem 0.7rem; font-size: 0.78rem;
+    color: var(--text);
+  }}
+  .cap-badge .cap-icon {{ font-size: 0.85rem; }}
+  .example-cats {{ max-width: 580px; margin: 0 auto; }}
+  .example-cat {{
+    margin-bottom: 0.7rem; text-align: left;
+  }}
+  .example-cat-title {{
+    font-size: 0.72rem; color: var(--muted); text-transform: uppercase;
+    letter-spacing: 0.03em; margin-bottom: 0.3rem; padding-left: 0.1rem;
+  }}
+  .examples {{ display: flex; flex-wrap: wrap; gap: 0.4rem; }}
   .examples button {{
     background: var(--card); color: var(--text); border: 1px solid var(--border);
-    border-radius: 8px; padding: 0.5rem 1rem; font-size: 0.85rem;
-    cursor: pointer; transition: border-color 0.15s;
+    border-radius: 8px; padding: 0.45rem 0.85rem; font-size: 0.82rem;
+    cursor: pointer; transition: border-color 0.15s, background 0.15s;
+    text-align: left;
   }}
-  .examples button:hover {{ border-color: var(--accent); }}
+  .examples button:hover {{ border-color: var(--accent); background: var(--hover-bg); }}
+
+  /* --- Keyboard shortcut overlay --- */
+  .shortcut-overlay {{
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6); z-index: 1000;
+    justify-content: center; align-items: center;
+  }}
+  .shortcut-overlay.visible {{ display: flex; }}
+  .shortcut-card {{
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.5rem; max-width: 400px; width: 90%;
+    max-height: 80vh; overflow-y: auto;
+  }}
+  .shortcut-card h3 {{ font-size: 1rem; margin-bottom: 0.8rem; color: var(--text); }}
+  .shortcut-row {{
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0.3rem 0; font-size: 0.85rem;
+  }}
+  .shortcut-row kbd {{
+    background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+    padding: 0.15rem 0.45rem; font-size: 0.78rem; font-family: inherit;
+    min-width: 28px; text-align: center;
+  }}
+
+  /* --- Responsive --- */
+  @media (max-width: 600px) {{
+    header {{ padding: 0.5rem 0.8rem; }}
+    header h1 {{ font-size: 1rem; }}
+    .chat-messages {{ padding: 0.6rem 0.8rem; }}
+    .chat-input {{ padding: 0.5rem 0.8rem; }}
+    .msg {{ font-size: 0.88rem; padding: 0.55rem 0.75rem; }}
+    .msg-wrapper {{ max-width: 92%; }}
+    .input-hint {{ display: none; }}
+    .examples button {{ font-size: 0.8rem; padding: 0.4rem 0.7rem; }}
+    .header-right {{ gap: 0.4rem; }}
+  }}
 </style>
 </head>
 <body>
 
+<!-- Keyboard shortcut overlay -->
+<div class="shortcut-overlay" id="shortcut-overlay" role="dialog" aria-label="键盘快捷键" aria-modal="true">
+  <div class="shortcut-card">
+    <h3>⌨️ 键盘快捷键</h3>
+    <div class="shortcut-row"><span>聚焦输入框</span><kbd>Ctrl</kbd>+<kbd>K</kbd></div>
+    <div class="shortcut-row"><span>发送消息</span><kbd>Enter</kbd></div>
+    <div class="shortcut-row"><span>上一条消息</span><kbd>↑</kbd></div>
+    <div class="shortcut-row"><span>下一条消息</span><kbd>↓</kbd></div>
+    <div class="shortcut-row"><span>取消执行</span><kbd>Escape</kbd></div>
+    <div class="shortcut-row"><span>清空对话</span><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd></div>
+    <div class="shortcut-row"><span>切换主题</span><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>T</kbd></div>
+    <div class="shortcut-row"><span>关闭此面板</span><kbd>Escape</kbd> / <kbd>?</kbd></div>
+    <div style="margin-top:0.8rem;text-align:center">
+      <button class="header-btn" onclick="toggleShortcuts()" style="margin:0 auto">关闭</button>
+    </div>
+  </div>
+</div>
+
 <!-- Header -->
-<header>
+<header role="banner">
   <h1>🤖 <span>Ollama Local Agent</span></h1>
   <div class="header-right">
-    <div class="status" id="status-bar">
-      <span class="status-dot loading"></span>
+    <div class="status" id="status-bar" role="status" aria-live="polite">
+      <span class="status-dot loading" aria-hidden="true"></span>
       <span>连接中…</span>
     </div>
-    <select id="model-select" title="选择模型">
+    <select id="model-select" title="选择模型" aria-label="选择 AI 模型">
       <option value="">加载中…</option>
     </select>
+    <button class="header-btn" id="theme-btn" onclick="toggleTheme()" title="切换明暗主题 (Ctrl+Shift+T)" aria-label="切换主题" aria-pressed="false">🌙</button>
+    <button class="header-btn" onclick="toggleShortcuts()" title="键盘快捷键 (?)" aria-label="快捷键帮助">⌨️</button>
   </div>
 </header>
 
 <!-- Main layout -->
-<div class="main">
+<div class="main" role="main">
   <!-- Chat area -->
   <div class="chat-area">
-    <div class="chat-messages" id="chat-messages">
+    <div class="chat-messages" id="chat-messages" role="log" aria-live="polite" aria-label="对话消息">
       <div class="welcome" id="welcome">
         <h2>👋 你好！我是本地 AI 助手</h2>
-        <p>我可以帮你执行命令、读写文件、查询数据库、分析数据——所有操作都在本地安全执行。</p>
-        <p style="font-size:0.82rem; color:var(--muted)">试试下面的问题，或直接输入你的需求：</p>
-        <div class="examples">
-          <button onclick="sendExample(this)">我的系统是什么环境？</button>
-          <button onclick="sendExample(this)">工作空间里有哪些文件？</button>
-          <button onclick="sendExample(this)">查看数据库结构</button>
-          <button onclick="sendExample(this)">本地有哪些模型可用？</button>
+        <p class="subtitle">我可以帮你执行命令、读写文件、查询数据库、分析数据——所有操作都在本地安全执行，数据不会离开你的电脑。</p>
+        <div class="caps" aria-label="核心能力">
+          <span class="cap-badge"><span class="cap-icon">💻</span> 命令执行</span>
+          <span class="cap-badge"><span class="cap-icon">📁</span> 文件读写</span>
+          <span class="cap-badge"><span class="cap-icon">🗄️</span> 数据库查询</span>
+          <span class="cap-badge"><span class="cap-icon">📊</span> 数据分析</span>
+          <span class="cap-badge"><span class="cap-icon">🔒</span> 本地安全</span>
+        </div>
+        <div class="example-cats">
+          <div class="example-cat">
+            <div class="example-cat-title">🚀 快速开始</div>
+            <div class="examples">
+              <button onclick="sendExample(this)">我的系统是什么环境？</button>
+              <button onclick="sendExample(this)">工作空间里有哪些文件？</button>
+            </div>
+          </div>
+          <div class="example-cat">
+            <div class="example-cat-title">🗄️ 数据库</div>
+            <div class="examples">
+              <button onclick="sendExample(this)">查看数据库结构</button>
+              <button onclick="sendExample(this)">分析数据库字段含义</button>
+            </div>
+          </div>
+          <div class="example-cat">
+            <div class="example-cat-title">📊 分析 &amp; 可视化</div>
+            <div class="examples">
+              <button onclick="sendExample(this)">设计宽表并加载数据</button>
+              <button onclick="sendExample(this)">生成 3D 可视化散点图</button>
+            </div>
+          </div>
+          <div class="example-cat">
+            <div class="example-cat-title">🤖 系统</div>
+            <div class="examples">
+              <button onclick="sendExample(this)">本地有哪些模型可用？</button>
+              <button onclick="sendExample(this)">查看磁盘使用情况</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-    <div class="chat-input">
-      <input type="text" id="chat-input" placeholder="输入消息… (Enter 发送)" autocomplete="off" />
-      <button id="send-btn" onclick="sendMessage()">发送</button>
-      <button id="stop-btn" class="btn-stop" onclick="cancelTask()">⏹ 停止</button>
-      <button class="btn-secondary" onclick="resetChat()" title="清空对话">🗑</button>
+    <div class="input-hint" aria-hidden="true">
+      <span><kbd>Enter</kbd> 发送</span>
+      <span><kbd>↑</kbd><kbd>↓</kbd> 历史</span>
+      <span><kbd>Ctrl+K</kbd> 聚焦</span>
+      <span><kbd>Esc</kbd> 取消</span>
+    </div>
+    <div class="chat-input" role="form" aria-label="发送消息">
+      <input type="text" id="chat-input" placeholder="输入消息… (Enter 发送，↑↓ 历史)" autocomplete="off" aria-label="消息输入" />
+      <button id="send-btn" onclick="sendMessage()" aria-label="发送">发送</button>
+      <button id="stop-btn" class="btn-stop" onclick="cancelTask()" aria-label="停止执行">⏹ 停止</button>
+      <button class="btn-secondary" onclick="resetChat()" title="清空对话 (Ctrl+Shift+L)" aria-label="清空对话">🗑</button>
     </div>
   </div>
 
   <!-- Reference sidebar -->
-  <div class="ref-panel" id="ref-panel">
-    <h3 class="open" onclick="toggleSection(this)">服务状态</h3>
-    <div class="section-body">
+  <nav class="ref-panel" id="ref-panel" aria-label="参考信息">
+    <h3 class="open" onclick="toggleSection(this)" role="button" aria-expanded="true" tabindex="0">服务状态</h3>
+    <div class="section-body" role="region">
       <div class="cards">
-        <div class="card"><div class="label">Server</div><div class="value"><span class="status-dot ok"></span> 运行中</div></div>
-        <div class="card"><div class="label">Ollama</div><div class="value" id="ollama-status"><span class="status-dot loading"></span> …</div></div>
+        <div class="card"><div class="label">Server</div><div class="value"><span class="status-dot ok" aria-hidden="true"></span> 运行中</div></div>
+        <div class="card"><div class="label">Ollama</div><div class="value" id="ollama-status"><span class="status-dot loading" aria-hidden="true"></span> …</div></div>
         <div class="card"><div class="label">系统</div><div class="value" id="sys-os">—</div></div>
-        <div class="card"><div class="label">工作空间</div><div class="value" id="sys-workspace" style="font-size:0.75rem;word-break:break-all">—</div></div>
+        <div class="card"><div class="label">工作空间</div><div class="value" id="sys-workspace" style="font-size:0.72rem;word-break:break-all">—</div></div>
       </div>
     </div>
 
-    <h3 onclick="toggleSection(this)">可用模型</h3>
-    <div class="section-body">
+    <h3 onclick="toggleSection(this)" role="button" aria-expanded="false" tabindex="0">可用模型</h3>
+    <div class="section-body" role="region">
       <div class="model-list" id="model-list">
         <span class="model-tag" style="color:var(--muted)">加载中…</span>
       </div>
     </div>
 
-    <h3 onclick="toggleSection(this)">可用工具 ({len(TOOLS)})</h3>
-    <div class="section-body">
+    <h3 onclick="toggleSection(this)" role="button" aria-expanded="false" tabindex="0">可用工具 ({len(TOOLS)})</h3>
+    <div class="section-body" role="region">
       <table>
         <thead><tr><th>工具</th><th>说明</th></tr></thead>
         <tbody>
@@ -309,14 +504,14 @@ def render_dashboard() -> str:
       </table>
     </div>
 
-    <h3 onclick="toggleSection(this)">链接</h3>
-    <div class="section-body">
+    <h3 onclick="toggleSection(this)" role="button" aria-expanded="false" tabindex="0">链接</h3>
+    <div class="section-body" role="region">
       <div class="links">
         <a href="/docs">📖 API 文档</a>
         <a href="/openapi.json">📄 OpenAPI</a>
       </div>
     </div>
-  </div>
+  </nav>
 </div>
 
 <script>
@@ -328,22 +523,119 @@ const modelSel = document.getElementById("model-select");
 let sessionId = "web-" + Date.now();
 let currentEventSource = null;
 
+// --- Input history ---
+const inputHistory = [];
+let historyIdx = -1;
+
+// --- Theme ---
+function toggleTheme() {{
+  const isLight = document.documentElement.classList.toggle("light");
+  const btn = document.getElementById("theme-btn");
+  btn.textContent = isLight ? "☀️" : "🌙";
+  btn.setAttribute("aria-pressed", isLight ? "true" : "false");
+  try {{ localStorage.setItem("theme", isLight ? "light" : "dark"); }} catch(_) {{}}
+}}
+
+function initTheme() {{
+  try {{
+    const saved = localStorage.getItem("theme");
+    if (saved === "light") {{
+      document.documentElement.classList.add("light");
+      const btn = document.getElementById("theme-btn");
+      btn.textContent = "☀️";
+      btn.setAttribute("aria-pressed", "true");
+    }}
+  }} catch (_) {{}}
+}}
+initTheme();
+
+// --- Shortcut overlay ---
+function toggleShortcuts() {{
+  const overlay = document.getElementById("shortcut-overlay");
+  const visible = overlay.classList.toggle("visible");
+  if (visible) {{
+    overlay.querySelector("button").focus();
+  }} else {{
+    chatInput.focus();
+  }}
+}}
+
 // --- UI helpers ---
-function addMsg(role, text) {{
+function addMsg(role, text, opts) {{
+  opts = opts || {{}};
   const w = document.getElementById("welcome");
   if (w) w.style.display = "none";
 
+  const wrapper = document.createElement("div");
+  wrapper.className = "msg-wrapper " + role;
+
   const div = document.createElement("div");
   div.className = "msg " + role;
+  div.setAttribute("role", role === "bot" ? "article" : "log");
+
   if (role === "bot") {{
     div.innerHTML = escapeHtml(text)
       .replace(/```([\\s\\S]*?)```/g, '<pre style="background:var(--bg);padding:0.5rem;border-radius:6px;overflow-x:auto;margin:0.3rem 0">$1</pre>')
       .replace(/`([^`]+)`/g, '<code style="background:var(--bg);padding:0.1rem 0.3rem;border-radius:3px">$1</code>')
       .replace(/\\n/g, '<br>');
+  }} else if (role === "error") {{
+    div.textContent = text;
+  }} else if (role === "system") {{
+    div.textContent = text;
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight;
+    return div;
   }} else {{
     div.textContent = text;
   }}
-  chatBox.appendChild(div);
+
+  wrapper.appendChild(div);
+
+  // Meta row: timestamp + actions
+  const meta = document.createElement("div");
+  meta.className = "msg-meta";
+
+  const ts = document.createElement("span");
+  ts.textContent = new Date().toLocaleTimeString("zh-CN", {{hour:"2-digit", minute:"2-digit"}});
+  meta.appendChild(ts);
+
+  if (opts.elapsed) {{
+    const dur = document.createElement("span");
+    dur.textContent = opts.elapsed;
+    dur.style.marginLeft = "0.3rem";
+    meta.appendChild(dur);
+  }}
+
+  // Copy button
+  const copyBtn = document.createElement("button");
+  copyBtn.className = "msg-action";
+  copyBtn.textContent = "📋";
+  copyBtn.title = "复制";
+  copyBtn.setAttribute("aria-label", "复制消息");
+  copyBtn.onclick = () => {{
+    navigator.clipboard.writeText(text).then(() => {{
+      copyBtn.textContent = "✓";
+      copyBtn.classList.add("copied");
+      setTimeout(() => {{ copyBtn.textContent = "📋"; copyBtn.classList.remove("copied"); }}, 1500);
+    }}).catch(() => {{}});
+  }};
+  meta.appendChild(copyBtn);
+
+  // Retry button for bot errors
+  if (role === "error" && opts.retryText) {{
+    const retryBtn = document.createElement("button");
+    retryBtn.className = "msg-action";
+    retryBtn.textContent = "🔄 重试";
+    retryBtn.setAttribute("aria-label", "重试");
+    retryBtn.onclick = () => {{
+      chatInput.value = opts.retryText;
+      sendMessage();
+    }};
+    meta.appendChild(retryBtn);
+  }}
+
+  wrapper.appendChild(meta);
+  chatBox.appendChild(wrapper);
   chatBox.scrollTop = chatBox.scrollHeight;
   return div;
 }}
@@ -357,7 +649,8 @@ function escapeHtml(s) {{
 function addProgressStep(icon, text, cls) {{
   const div = document.createElement("div");
   div.className = "progress-step " + (cls || "");
-  div.innerHTML = '<span class="step-icon">' + icon + '</span><span>' + escapeHtml(text) + '</span>';
+  div.setAttribute("role", "status");
+  div.innerHTML = '<span class="step-icon" aria-hidden="true">' + icon + '</span><span>' + escapeHtml(text) + '</span>';
   chatBox.appendChild(div);
   chatBox.scrollTop = chatBox.scrollHeight;
   return div;
@@ -365,11 +658,11 @@ function addProgressStep(icon, text, cls) {{
 
 function updateProgressStep(div, icon, text, cls, preview) {{
   div.className = "progress-step " + (cls || "");
-  let html = '<span class="step-icon">' + icon + '</span><span>' + escapeHtml(text) + '</span>';
+  let html = '<span class="step-icon" aria-hidden="true">' + icon + '</span><span>' + escapeHtml(text) + '</span>';
   if (preview) {{
     const id = "detail-" + Date.now();
-    html += '<span class="step-toggle" onclick="toggleDetail(\'' + id + '\')">详情</span>';
-    html += '<div class="step-detail" id="' + id + '">' + escapeHtml(preview) + '</div>';
+    html += '<span class="step-toggle" onclick="toggleDetail(\'' + id + '\')" role="button" tabindex="0" aria-label="展开详情">详情</span>';
+    html += '<div class="step-detail" id="' + id + '" role="region">' + escapeHtml(preview) + '</div>';
   }}
   div.innerHTML = html;
   chatBox.scrollTop = chatBox.scrollHeight;
@@ -385,10 +678,16 @@ function setRunning(running) {{
   sendBtn.disabled = running;
   sendBtn.style.display = running ? "none" : "";
   stopBtn.classList.toggle("visible", running);
+  if (running) {{
+    chatInput.setAttribute("aria-busy", "true");
+  }} else {{
+    chatInput.removeAttribute("aria-busy");
+  }}
 }}
 
 function toggleSection(h3) {{
-  h3.classList.toggle("open");
+  const isOpen = h3.classList.toggle("open");
+  h3.setAttribute("aria-expanded", isOpen ? "true" : "false");
 }}
 
 // --- Cancel ---
@@ -399,14 +698,24 @@ async function cancelTask() {{
 }}
 
 // --- Send with streaming ---
+let lastSentText = "";
+
 async function sendMessage() {{
   const text = chatInput.value.trim();
   if (!text) return;
+  lastSentText = text;
   chatInput.value = "";
+
+  // Add to history
+  if (inputHistory[inputHistory.length - 1] !== text) {{
+    inputHistory.push(text);
+  }}
+  historyIdx = inputHistory.length;
+
   addMsg("user", text);
   setRunning(true);
+  const startTime = Date.now();
 
-  // Map of step number → progress DOM element for live updates
   const stepElements = {{}};
 
   try {{
@@ -429,7 +738,6 @@ async function sendMessage() {{
       if (done) break;
       buffer += decoder.decode(value, {{ stream: true }});
 
-      // Parse SSE events from buffer
       const lines = buffer.split("\\n");
       buffer = lines.pop() || "";
 
@@ -444,7 +752,7 @@ async function sendMessage() {{
           if (eventType && dataStr) {{
             try {{
               const data = JSON.parse(dataStr);
-              handleSSE(eventType, data, stepElements);
+              handleSSE(eventType, data, stepElements, startTime);
             }} catch (_) {{}}
           }}
           eventType = null;
@@ -453,17 +761,20 @@ async function sendMessage() {{
       }}
     }}
   }} catch (e) {{
-    const errDiv = document.createElement("div");
-    errDiv.className = "msg error";
-    errDiv.textContent = "⚠️ 连接失败: " + e.message;
-    chatBox.appendChild(errDiv);
+    addMsg("error", "⚠️ 连接失败: " + e.message, {{ retryText: text }});
   }} finally {{
     setRunning(false);
     chatInput.focus();
   }}
 }}
 
-function handleSSE(event, data, stepElements) {{
+function formatElapsed(startTime) {{
+  const ms = Date.now() - startTime;
+  if (ms < 1000) return ms + "ms";
+  return (ms / 1000).toFixed(1) + "s";
+}}
+
+function handleSSE(event, data, stepElements, startTime) {{
   switch (event) {{
     case "thinking":
       if (!stepElements[data.step]) {{
@@ -488,19 +799,14 @@ function handleSSE(event, data, stepElements) {{
       break;
 
     case "reply":
-      // Remove any lingering "thinking" step
       Object.values(stepElements).forEach(el => {{
         if (el.classList.contains("running")) el.remove();
       }});
-      addMsg("bot", data.reply);
+      addMsg("bot", data.reply, {{ elapsed: formatElapsed(startTime) }});
       break;
 
     case "error":
-      const errDiv = document.createElement("div");
-      errDiv.className = "msg error";
-      errDiv.textContent = "⚠️ " + (data.error || "未知错误");
-      chatBox.appendChild(errDiv);
-      chatBox.scrollTop = chatBox.scrollHeight;
+      addMsg("error", "⚠️ " + (data.error || "未知错误"), {{ retryText: lastSentText }});
       break;
 
     case "cancelled":
@@ -530,22 +836,130 @@ async function resetChat() {{
   chatBox.innerHTML = `
     <div class="welcome" id="welcome">
       <h2>👋 你好！我是本地 AI 助手</h2>
-      <p>我可以帮你执行命令、读写文件、查询数据库、分析数据——所有操作都在本地安全执行。</p>
-      <p style="font-size:0.82rem; color:var(--muted)">试试下面的问题，或直接输入你的需求：</p>
-      <div class="examples">
-        <button onclick="sendExample(this)">我的系统是什么环境？</button>
-        <button onclick="sendExample(this)">工作空间里有哪些文件？</button>
-        <button onclick="sendExample(this)">查看数据库结构</button>
-        <button onclick="sendExample(this)">本地有哪些模型可用？</button>
+      <p class="subtitle">我可以帮你执行命令、读写文件、查询数据库、分析数据——所有操作都在本地安全执行，数据不会离开你的电脑。</p>
+      <div class="caps" aria-label="核心能力">
+        <span class="cap-badge"><span class="cap-icon">💻</span> 命令执行</span>
+        <span class="cap-badge"><span class="cap-icon">📁</span> 文件读写</span>
+        <span class="cap-badge"><span class="cap-icon">🗄️</span> 数据库查询</span>
+        <span class="cap-badge"><span class="cap-icon">📊</span> 数据分析</span>
+        <span class="cap-badge"><span class="cap-icon">🔒</span> 本地安全</span>
+      </div>
+      <div class="example-cats">
+        <div class="example-cat">
+          <div class="example-cat-title">🚀 快速开始</div>
+          <div class="examples">
+            <button onclick="sendExample(this)">我的系统是什么环境？</button>
+            <button onclick="sendExample(this)">工作空间里有哪些文件？</button>
+          </div>
+        </div>
+        <div class="example-cat">
+          <div class="example-cat-title">🗄️ 数据库</div>
+          <div class="examples">
+            <button onclick="sendExample(this)">查看数据库结构</button>
+            <button onclick="sendExample(this)">分析数据库字段含义</button>
+          </div>
+        </div>
+        <div class="example-cat">
+          <div class="example-cat-title">📊 分析 &amp; 可视化</div>
+          <div class="examples">
+            <button onclick="sendExample(this)">设计宽表并加载数据</button>
+            <button onclick="sendExample(this)">生成 3D 可视化散点图</button>
+          </div>
+        </div>
+        <div class="example-cat">
+          <div class="example-cat-title">🤖 系统</div>
+          <div class="examples">
+            <button onclick="sendExample(this)">本地有哪些模型可用？</button>
+            <button onclick="sendExample(this)">查看磁盘使用情况</button>
+          </div>
+        </div>
       </div>
     </div>`;
 }}
 
+// --- Keyboard shortcuts ---
 chatInput.addEventListener("keydown", (e) => {{
+  // Enter to send
   if (e.key === "Enter" && !e.shiftKey && !sendBtn.disabled) {{
     e.preventDefault();
     sendMessage();
+    return;
   }}
+  // Up arrow: previous history
+  if (e.key === "ArrowUp" && chatInput.value === "") {{
+    e.preventDefault();
+    if (historyIdx > 0) {{
+      historyIdx--;
+      chatInput.value = inputHistory[historyIdx] || "";
+    }}
+    return;
+  }}
+  // Down arrow: next history
+  if (e.key === "ArrowDown" && inputHistory.length > 0) {{
+    e.preventDefault();
+    if (historyIdx < inputHistory.length - 1) {{
+      historyIdx++;
+      chatInput.value = inputHistory[historyIdx] || "";
+    }} else {{
+      historyIdx = inputHistory.length;
+      chatInput.value = "";
+    }}
+    return;
+  }}
+  // Escape: cancel or unfocus
+  if (e.key === "Escape") {{
+    if (stopBtn.classList.contains("visible")) {{
+      cancelTask();
+    }} else {{
+      chatInput.blur();
+    }}
+    return;
+  }}
+}});
+
+// Global shortcuts
+document.addEventListener("keydown", (e) => {{
+  // Ctrl+K: focus input
+  if ((e.ctrlKey || e.metaKey) && e.key === "k") {{
+    e.preventDefault();
+    chatInput.focus();
+    return;
+  }}
+  // Ctrl+Shift+L: clear chat
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "L") {{
+    e.preventDefault();
+    resetChat();
+    return;
+  }}
+  // Ctrl+Shift+T: toggle theme
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "T") {{
+    e.preventDefault();
+    toggleTheme();
+    return;
+  }}
+  // ? key (not in input): toggle shortcuts
+  if (e.key === "?" && document.activeElement !== chatInput) {{
+    e.preventDefault();
+    toggleShortcuts();
+    return;
+  }}
+  // Escape to close shortcut overlay
+  if (e.key === "Escape") {{
+    const overlay = document.getElementById("shortcut-overlay");
+    if (overlay.classList.contains("visible")) {{
+      toggleShortcuts();
+    }}
+  }}
+}});
+
+// Sidebar section keyboard support
+document.querySelectorAll(".ref-panel h3").forEach(h3 => {{
+  h3.addEventListener("keydown", (e) => {{
+    if (e.key === "Enter" || e.key === " ") {{
+      e.preventDefault();
+      toggleSection(h3);
+    }}
+  }});
 }});
 
 // --- Boot: populate status & models ---
@@ -571,17 +985,17 @@ chatInput.addEventListener("keydown", (e) => {{
       sel.innerHTML = data.models.map(m =>
         '<option value="' + m + '"' + (m === data.default ? ' selected' : '') + '>' + m + '</option>'
       ).join("");
-      statusEl.innerHTML = '<span class="status-dot ok"></span> ' + data.models.length + ' 模型';
-      statusBar.innerHTML = '<span class="status-dot ok"></span><span>已连接</span>';
+      statusEl.innerHTML = '<span class="status-dot ok" aria-hidden="true"></span> ' + data.models.length + ' 模型';
+      statusBar.innerHTML = '<span class="status-dot ok" aria-hidden="true"></span><span>已连接</span>';
       modelListEl.innerHTML = data.models.map(m => '<span class="model-tag">' + m + '</span>').join("");
     }} else {{
       sel.innerHTML = '<option value="">无可用模型</option>';
-      statusEl.innerHTML = '<span class="status-dot err"></span> 未连接';
-      statusBar.innerHTML = '<span class="status-dot err"></span><span>Ollama 未连接</span>';
+      statusEl.innerHTML = '<span class="status-dot err" aria-hidden="true"></span> 未连接';
+      statusBar.innerHTML = '<span class="status-dot err" aria-hidden="true"></span><span>Ollama 未连接</span>';
       modelListEl.innerHTML = '<span class="model-tag" style="color:var(--muted)">无</span>';
     }}
   }} catch (_) {{
-    document.getElementById("status-bar").innerHTML = '<span class="status-dot err"></span><span>Ollama 未连接</span>';
+    document.getElementById("status-bar").innerHTML = '<span class="status-dot err" aria-hidden="true"></span><span>Ollama 未连接</span>';
   }}
 
   chatInput.focus();

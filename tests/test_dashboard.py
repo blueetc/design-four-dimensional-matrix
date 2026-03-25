@@ -102,6 +102,120 @@ class TestRenderDashboard:
         html = render_dashboard()
         assert "toggleDetail" in html
 
+    # --- Professional UX features ---
+
+    def test_contains_theme_toggle(self) -> None:
+        """Light/dark theme toggle button is present."""
+        html = render_dashboard()
+        assert "toggleTheme" in html
+        assert 'id="theme-btn"' in html
+
+    def test_contains_light_theme_css(self) -> None:
+        """Light theme CSS variables are defined."""
+        html = render_dashboard()
+        assert "html.light" in html
+
+    def test_contains_keyboard_shortcuts_overlay(self) -> None:
+        """Keyboard shortcuts help overlay is present."""
+        html = render_dashboard()
+        assert 'id="shortcut-overlay"' in html
+        assert "toggleShortcuts" in html
+
+    def test_contains_ctrl_k_shortcut(self) -> None:
+        """Ctrl+K focus shortcut is implemented."""
+        html = render_dashboard()
+        assert 'e.key === "k"' in html
+
+    def test_contains_input_history(self) -> None:
+        """Input history (up/down arrow) is implemented."""
+        html = render_dashboard()
+        assert "inputHistory" in html
+        assert "historyIdx" in html
+
+    def test_contains_message_copy_button(self) -> None:
+        """Copy-to-clipboard action on messages is present."""
+        html = render_dashboard()
+        assert "navigator.clipboard" in html
+        assert "msg-action" in html
+
+    def test_contains_retry_on_error(self) -> None:
+        """Retry button for failed messages is present."""
+        html = render_dashboard()
+        assert "retryText" in html
+        assert "🔄" in html
+
+    def test_contains_response_time(self) -> None:
+        """Response time display (elapsed) is present."""
+        html = render_dashboard()
+        assert "formatElapsed" in html
+        assert "elapsed" in html
+
+    def test_contains_aria_attributes(self) -> None:
+        """Accessibility: ARIA attributes are present."""
+        html = render_dashboard()
+        assert 'aria-label' in html
+        assert 'aria-live="polite"' in html
+        assert 'role="log"' in html
+        assert 'role="status"' in html
+
+    def test_contains_focus_visible(self) -> None:
+        """Accessibility: focus-visible styles are present."""
+        html = render_dashboard()
+        assert ":focus-visible" in html
+
+    def test_contains_aria_expanded(self) -> None:
+        """Accessibility: sidebar sections have aria-expanded."""
+        html = render_dashboard()
+        assert 'aria-expanded' in html
+
+    def test_contains_keyboard_hints(self) -> None:
+        """Input hint bar with keyboard shortcuts is present."""
+        html = render_dashboard()
+        assert "input-hint" in html
+        assert "Ctrl+K" in html
+
+    def test_contains_capability_badges(self) -> None:
+        """Welcome screen has capability badges for features."""
+        html = render_dashboard()
+        assert "cap-badge" in html
+        assert "命令执行" in html
+        assert "本地安全" in html
+
+    def test_contains_categorized_examples(self) -> None:
+        """Welcome screen has categorized example sections."""
+        html = render_dashboard()
+        assert "example-cat-title" in html
+        assert "快速开始" in html
+        assert "数据库" in html
+        assert "分析" in html
+
+    def test_contains_message_timestamps(self) -> None:
+        """Messages display timestamps."""
+        html = render_dashboard()
+        assert "toLocaleTimeString" in html
+        assert "msg-meta" in html
+
+    def test_contains_responsive_mobile_styles(self) -> None:
+        """Responsive mobile breakpoint styles are present."""
+        html = render_dashboard()
+        assert "@media (max-width: 600px)" in html
+
+    def test_sidebar_uses_nav_element(self) -> None:
+        """Sidebar uses semantic <nav> element."""
+        html = render_dashboard()
+        assert "<nav" in html
+        assert 'aria-label="参考信息"' in html
+
+    def test_header_uses_banner_role(self) -> None:
+        """Header has banner role for accessibility."""
+        html = render_dashboard()
+        assert 'role="banner"' in html
+
+    def test_contains_escape_cancel_shortcut(self) -> None:
+        """Escape key triggers cancel during execution."""
+        html = render_dashboard()
+        assert '"Escape"' in html
+
 
 # ---------------------------------------------------------------------------
 # TOOLS metadata integrity
