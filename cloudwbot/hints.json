@@ -1,0 +1,30 @@
+[
+  {
+    "category": "model_management",
+    "content": "使用 /models 命令查看所有已通过 Ollama 安装的本地模型"
+  },
+  {
+    "category": "model_management",
+    "content": "使用 /plan <任务描述> 让 AI 根据任务类型推荐最适合的本地模型"
+  },
+  {
+    "category": "task_completion",
+    "content": "编写 Java 程序时，AI 会生成代码、自动用 javac 编译并用 java 运行，需要确保本机已安装 JDK"
+  },
+  {
+    "category": "task_completion",
+    "content": "在任务描述中加入 'FILE: <文件名>' 标记可指定生成文件的名称"
+  },
+  {
+    "category": "task_completion",
+    "content": "执行轨迹面板显示每步操作日志；实时控制台显示 shell/编译/运行的输出"
+  },
+  {
+    "category": "task_completion",
+    "content": "任务工作目录默认优先使用自动识别的项目根目录下的 .cloudwbot_workspace/tasks/<task-id>/；若项目目录不可写则回退到 ~/cloudwbot_workspace/tasks/<task-id>/；也可通过 CLOUDWBOT_WORKSPACE 环境变量覆盖"
+  },
+  {
+    "category": "task_completion",
+    "content": "使用 /clear 清空对话历史，使用 /status 检查 Ollama 连接状态"
+  }
+]

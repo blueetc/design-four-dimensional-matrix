@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+  <title>CloudWBot</title>
+</head>
+<body>
+  <div id="app">
+    <div id="header">
+      <span class="logo">🤖 CloudWBot</span>
+      <span class="subtitle">本地 AI 驱动的任务执行与审查运行时</span>
+      <span id="system-status" class="status-dot green" title="系统状态">● 系统正常</span>
+    </div>
+
+    <div id="main-layout">
+      <!-- Left: Chat -->
+      <div id="chat-panel">
+        <div id="chat-header">
+          <span>智能对话</span>
+          <button id="btn-clear-chat" title="清空对话">清空</button>
+        </div>
+        <div id="chat-messages"></div>
+        <div id="chat-context-banner" class="hidden">
+          <span id="chat-context-text"></span>
+          <button id="btn-cancel-context" class="small-btn" title="取消当前追问上下文">取消</button>
+        </div>
+        <div id="chat-input-row">
+          <textarea id="chat-input" placeholder="输入消息或命令..." rows="1"></textarea>
+          <div id="chat-input-actions">
+            <button id="btn-follow-up-task" class="secondary-btn" title="基于右侧选中的已完成任务继续提问" disabled>追问任务</button>
+            <button id="btn-rerun-task" class="secondary-btn" title="重新执行右侧选中的已结束任务" disabled>重新执行</button>
+            <button id="btn-send">发送</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Panels -->
+      <div id="right-panel">
+        <!-- Task management -->
+        <div class="panel-section" id="task-panel">
+          <div class="panel-header">
+            <span>任务管理</span>
+            <div>
+              <button class="small-btn" id="btn-new-task">新建任务</button>
+              <button class="small-btn" id="btn-refresh-tasks">刷新</button>
+            </div>
+          </div>
+          <div id="task-list"></div>
+        </div>
+
+        <!-- Approval queue -->
+        <div class="panel-section" id="approval-panel">
+          <div class="panel-header">
+            <span>审批队列</span>
+            <button class="small-btn" id="btn-refresh-approvals">刷新</button>
+          </div>
+          <div id="approval-list"><div class="empty-hint">暂无待审批动作</div></div>
+        </div>
+
+        <!-- Supplement info -->
+        <div class="panel-section" id="supplement-panel">
+          <div class="panel-header">
+            <span>补充信息</span>
+            <button class="small-btn" id="btn-refresh-supplement">刷新</button>
+          </div>
+          <div id="supplement-list"><div class="empty-hint">暂无待补充信息任务</div></div>
+        </div>
+
+        <!-- Execution trace -->
+        <div class="panel-section" id="trace-panel">
+          <div class="panel-header"><span>执行轨迹</span></div>
+          <div id="trace-content"><div class="empty-hint">选中任务后显示执行轨迹</div></div>
+        </div>
+
+        <!-- Console -->
+        <div class="panel-section" id="console-panel">
+          <div class="panel-header">
+            <span>🖥️ 实时控制台</span>
+            <button class="small-btn" id="btn-clear-console">清空</button>
+          </div>
+          <div id="console-output"><div class="empty-hint">选中任务后自动显示 shell/code 工具的实时输出</div></div>
+        </div>
+
+        <!-- System status -->
+        <div class="panel-section" id="stats-panel">
+          <div class="panel-header"><span>系统状态</span></div>
+          <div id="stats-content">
+            <div class="stats-grid">
+              <div class="stat-item"><div class="stat-num" id="stat-total">0</div><div class="stat-label">任务总数</div></div>
+              <div class="stat-item"><div class="stat-num" id="stat-running">0</div><div class="stat-label">运行中</div></div>
+              <div class="stat-item"><div class="stat-num" id="stat-done">0</div><div class="stat-label">已完成</div></div>
+              <div class="stat-item"><div class="stat-num" id="stat-failed">0</div><div class="stat-label">失败</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>

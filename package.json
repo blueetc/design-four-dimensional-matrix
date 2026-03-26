@@ -1,0 +1,31 @@
+{
+  "name": "cloudwbot",
+  "displayName": "CloudWBot",
+  "description": "本地 AI 驱动的任务执行与审查运行时",
+  "version": "0.2.0",
+  "publisher": "blueetc",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/blueetc/ollama-python"
+  },
+  "scripts": {
+    "start": "node apps/server.js",
+    "dev": "node --watch apps/server.js",
+    "tt:analyze": "node tt/run_project_deep_analysis.js",
+    "lint": "eslint apps",
+    "lint:fix": "eslint apps --fix",
+    "test": "node --test apps/lib/*.test.js",
+    "test:stress": "node apps/stress/stress.js",
+    "test:watch": "node --test --watch apps/lib/*.test.js",
+    "clean": "node -e \"const fs=require('fs'),path=require('path');const dirs=['.cloudwbot_workspace',require('os').homedir()+'/cloudwbot_workspace'];dirs.forEach(d=>{try{fs.rmSync(d,{recursive:true,force:true});console.log('Cleaned:',d);}catch(e){}})\""
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.0.3",
+    "globals": "^17.4.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
